@@ -1,315 +1,72 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SwiftShop | Admin</title>
+    <title>SwiftShop | Merchant HQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
-    <script>
-      const appUrl = (path) => new URL(path, window.location.origin).toString();
-    </script>
+    <script>const appUrl = (path) => new URL(path, window.location.origin).toString();</script>
     <style>
-      body { background: #F9FAFB; }
-      .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
-      .primary-btn { background: #4F46E5; color: #FFFFFF; }
-      .primary-btn:hover { background: #4338CA; }
-      .status-pill { background: #E0F2FE; color: #0F172A; border: 1px solid #BAE6FD; }
+      [x-cloak] { display: none !important; }
+      body { background: #F8FAFC; }
+      .flat-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+      .primary-button { background: #4F46E5; color: #FFFFFF; }
+      .primary-button:hover { background: #4338CA; }
       @keyframes spin { to { transform: rotate(360deg); } }
       .spinner { width: 1rem; height: 1rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 9999px; animation: spin 650ms linear infinite; }
     </style>
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-800" x-data="adminApp()" x-init="init()">
-    <div x-show="connectionError" x-transition class="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 shadow-sm" x-text="connectionError"></div>
-    <div class="fixed right-4 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
-      <template x-for="toast in toasts" :key="toast.id">
-        <div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-3" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm" x-text="toast.message"></div>
-      </template>
+  <body class="min-h-screen text-slate-800 antialiased" x-data="merchantApp()" x-init="init()">
+    <div class="pointer-events-none fixed right-5 top-5 z-50 flex w-[calc(100%-2.5rem)] max-w-sm flex-col gap-2">
+      <template x-for="toast in toasts" :key="toast.id"><div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-3" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg" :class="toast.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-900' : toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-indigo-200 bg-indigo-50 text-indigo-900'"><span class="flex-1" x-text="toast.message"></span><button type="button" class="text-current opacity-60 hover:opacity-100" @click="removeToast(toast.id)">x</button></div></template>
     </div>
-    <header class="border-b border-slate-200 bg-white">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <div>
-          <div class="text-2xl font-bold text-slate-900">Merchant HQ</div>
-          <div class="text-sm text-slate-500">Operations dashboard</div>
-        </div>
+    <div x-show="connectionError" x-transition class="fixed left-1/2 top-5 z-40 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-800 shadow-sm" x-text="connectionError"></div>
 
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">A</span>
-            <div>
-              <div class="text-sm font-semibold text-slate-900" x-text="adminName"></div>
-              <div class="text-[11px] text-slate-500">Admin</div>
-            </div>
-          </div>
-          <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="logout()">Logout</button>
-        </div>
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3"><div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg></div><div><div class="flex items-center gap-2"><span class="text-lg font-bold tracking-tight text-slate-900">SWIFTSHOP<span class="text-indigo-600">.HQ</span></span><span class="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">MERCHANT</span></div><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Enterprise operations console</div></div></div>
+        <div class="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 sm:flex"><span class="h-2 w-2 rounded-full" :class="apiConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'"></span><span x-text="apiConnected ? 'REST API connected' : 'API connection unavailable'"></span></div>
+        <div class="flex items-center gap-2"><button type="button" class="hidden items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 sm:flex" @click="goToStore()">Storefront</button><div class="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:flex"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">A</span><span class="text-xs font-semibold text-slate-700" x-text="adminName"></span></div><button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" @click="logout()">Logout</button></div>
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section class="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="flat-card rounded-2xl p-5">
-          <div class="text-sm text-slate-500">Total Revenue</div>
-          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="formatPrice(totalRevenue)"></div>
-        </div>
-        <div class="flat-card rounded-2xl p-5">
-          <div class="text-sm text-slate-500">Total Orders</div>
-          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="orders.length"></div>
-        </div>
-        <div class="flat-card rounded-2xl p-5">
-          <div class="text-sm text-slate-500">Active Items</div>
-          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="products.length"></div>
-        </div>
-        <div class="flat-card rounded-2xl p-5">
-          <div class="text-sm text-slate-500">AOV</div>
-          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="formatPrice(avgOrderValue)"></div>
-        </div>
-      </section>
+    <main class="mx-auto max-w-7xl space-y-8 px-4 py-7 sm:px-6 lg:px-8">
+      <section class="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-end"><div><div class="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600"><span>Merchant hub console</span><span class="text-slate-300">/</span><span class="font-mono text-slate-400">Live workspace</span></div><h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Store analytics &amp; operations</h1><p class="mt-1 text-sm text-slate-500">Real-time orders, inventory valuation, and catalog lifecycle management.</p></div><div class="flex gap-2"><button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" @click="refreshAll()">Sync data</button><button type="button" class="primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-sm transition hover:scale-[1.02] active:scale-[0.98]" @click="showCreateModal = true"><span class="text-base leading-none">+</span> Add product</button></div></section>
 
-      <section class="mb-8 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <div class="flat-card rounded-2xl overflow-hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 class="text-lg font-semibold text-slate-900">Orders</h2>
-            <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700" @click="fetchOrders()">Refresh</button>
-          </div>
+      <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"><template x-for="metric in metrics" :key="metric.label"><div class="flat-card group rounded-2xl p-5 transition hover:border-indigo-200"><div class="flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="metric.label"></span><span class="flex h-8 w-8 items-center justify-center rounded-lg text-sm" :class="metric.color" x-text="metric.icon"></span></div><div class="mt-3 text-2xl font-bold tracking-tight text-slate-900" x-text="metric.value"></div><p class="mt-1 text-xs text-slate-400" x-text="metric.detail"></p></div></template></section>
 
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600">
-                <tr>
-                  <th class="px-5 py-3 font-medium">Order</th>
-                  <th class="px-5 py-3 font-medium">Customer</th>
-                  <th class="px-5 py-3 font-medium">Total</th>
-                  <th class="px-5 py-3 font-medium">Status</th>
-                  <th class="px-5 py-3 font-medium">Date</th>
-                </tr>
-              </thead>
-              <tbody x-show="!loadingOrders">
-                <template x-for="order in orders" :key="order.id">
-                  <tr class="border-t border-slate-200 transition-colors hover:bg-slate-50">
-                    <td class="px-5 py-3 font-medium text-slate-900" x-text="'#' + order.id"></td>
-                    <td class="px-5 py-3">
-                      <div class="font-medium text-slate-900" x-text="order.name || 'Unknown'"></div>
-                      <div class="text-xs text-slate-500" x-text="order.email || 'n/a'"></div>
-                    </td>
-                    <td class="px-5 py-3 font-medium text-slate-900" x-text="formatPrice(order.total_amount)"></td>
-                    <td class="px-5 py-3">
-                      <span class="status-pill inline-flex rounded-full px-2.5 py-1 text-xs font-medium" x-text="order.status"></span>
-                    </td>
-                    <td class="px-5 py-3 text-slate-500" x-text="formatDate(order.created_at)"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          <div x-show="loadingOrders" class="space-y-3 p-5">
-            <template x-for="item in [1, 2, 3]" :key="item"><div class="h-10 animate-pulse rounded bg-slate-100"></div></template>
-          </div>
-          <div x-show="!loadingOrders && !orders.length" class="border-t border-slate-200 px-5 py-10 text-center text-sm text-slate-500">No orders have been placed yet.</div>
-        </div>
+      <section class="space-y-4"><div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><h2 class="text-lg font-bold text-slate-900">Orders management</h2><p class="text-xs text-slate-500">Customer transaction log synchronized from the live API.</p></div><span class="w-fit rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700" x-text="filteredOrders.length + ' orders recorded'"></span></div><div class="flat-card overflow-hidden rounded-2xl"><div class="flex flex-col justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-4 sm:flex-row sm:items-center"><div class="text-sm font-bold text-slate-900">Recorded customer transactions</div><div class="flex gap-2"><input x-model="orderSearch" type="search" placeholder="Filter customer or ID..." class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-indigo-500 sm:w-56" /><button type="button" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="fetchOrders()">Refresh</button></div></div><div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-3.5">Order ID</th><th class="px-3 py-3.5">Customer</th><th class="px-3 py-3.5">Date</th><th class="px-3 py-3.5">Total</th><th class="px-3 py-3.5">Status</th></tr></thead><tbody class="divide-y divide-slate-100 bg-white"><template x-for="order in filteredOrders" :key="order.id"><tr class="transition-colors hover:bg-slate-50"><td class="whitespace-nowrap px-6 py-4 font-mono text-xs font-medium text-indigo-600" x-text="'#' + order.id"></td><td class="whitespace-nowrap px-3 py-4"><div class="font-medium text-slate-900" x-text="order.name || 'Unknown customer'"></div><div class="text-xs text-slate-400" x-text="order.email || 'No email'"></div></td><td class="whitespace-nowrap px-3 py-4 text-xs text-slate-500" x-text="formatDate(order.created_at)"></td><td class="whitespace-nowrap px-3 py-4 font-semibold text-slate-900" x-text="formatCurrency(order.total_amount)"></td><td class="whitespace-nowrap px-3 py-4"><span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span><span x-text="order.status"></span></span></td></tr></template></tbody></table></div><div x-show="loadingOrders" class="space-y-3 p-5"><template x-for="item in [1,2,3]" :key="item"><div class="h-10 animate-pulse rounded bg-slate-100"></div></template></div><div x-show="!loadingOrders &amp;&amp; !filteredOrders.length" class="px-5 py-12 text-center text-sm text-slate-500">No orders match your search.</div></div></section>
 
-        <div class="flat-card rounded-2xl p-5">
-          <div class="mb-4 text-lg font-semibold text-slate-900">Add Product</div>
-          <form @submit.prevent="addProduct()" class="space-y-3">
-            <input x-model="newProduct.title" type="text" placeholder="Product title" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
-            <input x-model="newProduct.price" type="number" min="0" step="0.01" placeholder="Price" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
-            <input x-model="newProduct.category" type="text" placeholder="Category" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
-            <input x-model="newProduct.image" type="url" placeholder="Image URL" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" />
-            <textarea x-model="newProduct.description" rows="3" placeholder="Description" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"></textarea>
-            <button type="submit" class="primary-btn flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70" :disabled="submittingProduct">
-              <span x-show="submittingProduct" class="spinner"></span>
-              <span x-text="submittingProduct ? 'Publishing...' : 'Add product'"></span>
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <section class="flat-card rounded-2xl overflow-hidden">
-        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 class="text-lg font-semibold text-slate-900">Inventory</h2>
-          <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700" @click="fetchProducts()">Refresh</button>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-600">
-              <tr>
-                <th class="px-5 py-3 font-medium">Product</th>
-                <th class="px-5 py-3 font-medium">Category</th>
-                <th class="px-5 py-3 font-medium">Price</th>
-                <th class="px-5 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody x-show="!loadingProducts">
-              <template x-for="product in products" :key="product.id">
-                  <tr class="border-t border-slate-200 transition-colors hover:bg-slate-50">
-                  <td class="px-5 py-3">
-                    <div class="flex items-center gap-3">
-                      <img :src="product.image || placeholderImage()" @error="fallbackImage($event)" :alt="product.title" class="h-12 w-12 rounded-lg bg-slate-100 object-cover" />
-                      <div>
-                        <div class="font-medium text-slate-900" x-text="product.title"></div>
-                        <div class="text-xs text-slate-500" x-text="product.description || 'No description'"></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-5 py-3 text-slate-700" x-text="product.category || 'General'"></td>
-                  <td class="px-5 py-3 font-medium text-slate-900" x-text="formatPrice(product.price)"></td>
-                  <td class="px-5 py-3">
-                    <button type="button" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600" @click="deleteProduct(product.id)">Delete</button>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        <div x-show="loadingProducts" class="space-y-3 p-5">
-          <template x-for="item in [1, 2, 3]" :key="item"><div class="h-14 animate-pulse rounded bg-slate-100"></div></template>
-        </div>
-        <div x-show="!loadingProducts && !products.length" class="border-t border-slate-200 px-5 py-10 text-center text-sm text-slate-500">No products are currently in inventory.</div>
-      </section>
+      <section class="space-y-4 border-t border-slate-200 pt-7"><div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><h2 class="text-lg font-bold text-slate-900">Active catalog &amp; inventory</h2><p class="text-xs text-slate-500">Manage SKUs, unit pricing, descriptions, and availability.</p></div><span class="w-fit rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700" x-text="products.length + ' SKUs active'"></span></div><div class="flat-card flex flex-col justify-between gap-4 rounded-2xl p-4 md:flex-row md:items-center"><input x-model="inventorySearch" type="search" placeholder="Search catalog items..." class="min-w-[240px] flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-indigo-500" /><div class="flex items-center gap-1.5 overflow-x-auto"><button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold" :class="inventoryCategory === 'All' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'" @click="inventoryCategory = 'All'">All</button><template x-for="cat in uniqueCategories" :key="cat"><button type="button" class="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold" :class="inventoryCategory === cat ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'" @click="inventoryCategory = cat" x-text="cat"></button></template></div></div><div x-show="loadingProducts" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><template x-for="item in [1,2,3,4]" :key="item"><div class="h-80 animate-pulse rounded-2xl border border-slate-200 bg-white p-4"><div class="h-44 rounded-xl bg-slate-200"></div><div class="mt-4 h-4 w-3/4 rounded bg-slate-200"></div><div class="mt-3 h-3 rounded bg-slate-100"></div></div></template></div><div x-show="!loadingProducts &amp;&amp; filteredProducts.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><template x-for="product in filteredProducts" :key="product.id"><article class="flat-card group flex flex-col justify-between overflow-hidden rounded-2xl transition hover:border-indigo-200 hover:shadow-md"><div><div class="relative h-44 overflow-hidden bg-slate-100"><img :src="product.image || placeholderImage()" @error="fallbackImage($event)" :alt="product.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><span class="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 shadow-sm" x-text="product.category || 'General'"></span><span class="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white"><span class="h-1.5 w-1.5 animate-ping rounded-full bg-white"></span>Live</span></div><div class="space-y-2 p-4"><div class="flex items-start justify-between gap-2"><h3 class="line-clamp-1 text-sm font-semibold text-slate-900" x-text="product.title"></h3><span class="whitespace-nowrap text-sm font-bold text-slate-900" x-text="formatCurrency(product.price)"></span></div><p class="line-clamp-2 text-xs text-slate-500" x-text="product.description || 'Catalog item.'"></p></div></div><div class="mt-2 flex items-center justify-between border-t border-slate-100 p-4 pt-3 text-xs"><span class="font-mono text-[11px] text-slate-400" x-text="'ID: ' + product.id"></span><button type="button" class="rounded-lg px-2.5 py-1.5 font-semibold text-rose-600 transition hover:bg-rose-50" @click="deleteProduct(product.id)">Remove</button></div></article></template></div><div x-show="!loadingProducts &amp;&amp; !filteredProducts.length" class="flat-card rounded-2xl border-dashed px-5 py-12 text-center text-sm text-slate-500">No catalog items match your filters.</div></section>
     </main>
 
+    <div x-cloak x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/50 p-4"><div x-show="showCreateModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" @click.outside="showCreateModal = false"><div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 p-6"><div><h2 class="text-lg font-bold text-slate-900">Add new product to catalog</h2><p class="mt-0.5 text-xs text-slate-500">Publish a new SKU to the live storefront.</p></div><button type="button" class="text-xl text-slate-400 hover:text-slate-700" @click="showCreateModal = false">x</button></div><form class="space-y-5 p-6" @submit.prevent="createProduct()"><div><label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Product title *</label><input x-model.trim="newProduct.title" type="text" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500" placeholder="e.g. Wireless keyboard" /></div><div class="grid gap-4 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Category *</label><input x-model.trim="newProduct.category" type="text" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500" placeholder="Electronics" /></div><div><label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Price (USD) *</label><input x-model.number="newProduct.price" type="number" min="0" step="0.01" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500" placeholder="129.99" /></div></div><div><label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Image URL</label><input x-model.trim="newProduct.image" type="url" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500" placeholder="https://..." /></div><div><label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Description</label><textarea x-model.trim="newProduct.description" rows="3" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500" placeholder="Describe the product..."></textarea></div><div class="flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="showCreateModal = false">Cancel</button><button type="submit" class="primary-button inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-sm disabled:cursor-not-allowed disabled:opacity-60" :disabled="submitting"><span x-show="submitting" class="spinner"></span><span x-text="submitting ? 'Publishing...' : 'Publish product'"></span></button></div></form></div></div>
+
     <script>
-      function adminApp() {
+      function merchantApp() {
         return {
-          adminName: 'Admin User',
-          orders: [],
-          products: [],
-          loadingProducts: true,
-          loadingOrders: true,
-          submittingProduct: false,
-          connectionError: '',
-          toasts: [],
-          toastId: 0,
-          newProduct: {
-            title: '',
-            price: '',
-            category: '',
-            image: '',
-            description: ''
-          },
-          get totalRevenue() {
-            return this.orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
-          },
-          get avgOrderValue() {
-            if (!this.orders.length) return 0;
-            return this.totalRevenue / this.orders.length;
-          },
-          init() {
-            const role = localStorage.getItem('user_role');
-            if (role !== 'admin') {
-              window.location.assign(appUrl('/'));
-              return;
-            }
-            this.adminName = localStorage.getItem('user_name') || 'Admin User';
-            this.fetchProducts();
-            this.fetchOrders();
-          },
-          async fetchProducts() {
-            this.loadingProducts = true;
-            try {
-              const response = await fetch(appUrl('/api/products'));
-              if (!response.ok) throw new Error('Failed to load products');
-              this.products = await response.json();
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast('Inventory could not be loaded.');
-            } finally {
-              this.loadingProducts = false;
-            }
-          },
-          async fetchOrders() {
-            this.loadingOrders = true;
-            try {
-              const response = await fetch(appUrl('/api/orders'));
-              if (!response.ok) throw new Error('Failed to load orders');
-              const rows = await response.json();
-              this.orders = rows.map((order) => ({
-                ...order,
-                name: order.name || order.customer_name || 'Unknown',
-                email: order.email || order.customer_email || 'unknown@example.com'
-              }));
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast('Orders could not be loaded.');
-            } finally {
-              this.loadingOrders = false;
-            }
-          },
-          async addProduct() {
-            this.submittingProduct = true;
-            try {
-              const payload = {
-                title: this.newProduct.title,
-                price: Number(this.newProduct.price),
-                category: this.newProduct.category,
-                image: this.newProduct.image,
-                description: this.newProduct.description
-              };
-
-              const response = await fetch(appUrl('/api/products'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-
-              const data = await response.json();
-              if (!response.ok) throw new Error(data.error || 'Unable to add product');
-
-              this.products.unshift(data);
-              this.newProduct = { title: '', price: '', category: '', image: '', description: '' };
-              this.showToast('New product published.');
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast(error.message || 'Unable to add product.');
-            } finally {
-              this.submittingProduct = false;
-            }
-          },
-          async deleteProduct(productId) {
-            try {
-              const response = await fetch(appUrl(`/api/products/${productId}`), { method: 'DELETE' });
-              if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Unable to delete product');
-              }
-              this.products = this.products.filter((product) => product.id !== productId);
-              this.showToast('Product deleted.');
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast(error.message || 'Unable to delete product.');
-            }
-          },
-          showToast(message) {
-            const id = ++this.toastId;
-            this.toasts.push({ id, message });
-            setTimeout(() => { this.toasts = this.toasts.filter((toast) => toast.id !== id); }, 3000);
-          },
-          placeholderImage() {
-            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#E5E7EB"/><path d="M380 220h140v110H380z" fill="#9CA3AF"/><circle cx="425" cy="260" r="12" fill="#F9FAFB"/><path d="m380 330 38-38 28 28 35-42 39 52H380z" fill="#F9FAFB"/></svg>';
-            return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-          },
-          fallbackImage(event) {
-            event.target.src = this.placeholderImage();
-            event.target.onerror = null;
-          },
-          formatPrice(value) {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
-          },
-          formatDate(value) {
-            if (!value) return 'N/A';
-            return new Date(value).toLocaleString();
-          },
-          logout() {
-            localStorage.clear();
-            window.location.assign(appUrl('/'));
-          }
+          adminName: 'Admin User', products: [], orders: [], orderSearch: '', inventorySearch: '', inventoryCategory: 'All', loadingProducts: true, loadingOrders: true, submitting: false, showCreateModal: false, apiConnected: false, connectionError: '', toasts: [], toastId: 0, newProduct: { title: '', category: '', price: '', image: '', description: '' },
+          get filteredOrders() { const query = this.orderSearch.trim().toLowerCase(); return query ? this.orders.filter((order) => `${order.id} ${order.name || ''} ${order.email || ''}`.toLowerCase().includes(query)) : this.orders; },
+          get uniqueCategories() { return [...new Set(this.products.map((product) => product.category).filter(Boolean))]; },
+          get filteredProducts() { const query = this.inventorySearch.trim().toLowerCase(); return this.products.filter((product) => (this.inventoryCategory === 'All' || product.category === this.inventoryCategory) && (!query || `${product.title} ${product.description || ''}`.toLowerCase().includes(query))); },
+          get totalRevenue() { return this.orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0); },
+          get averageOrderValue() { return this.orders.length ? this.totalRevenue / this.orders.length : 0; },
+          get metrics() { return [{ label: 'Total revenue', value: this.formatCurrency(this.totalRevenue), detail: 'Across recorded orders', icon: '$', color: 'bg-emerald-50 text-emerald-600' }, { label: 'Total orders', value: this.orders.length, detail: 'Live transaction count', icon: '#', color: 'bg-indigo-50 text-indigo-600' }, { label: 'Active catalog', value: this.products.length, detail: 'Live SKUs available', icon: 'SKU', color: 'bg-amber-50 text-amber-600' }, { label: 'Average order value', value: this.formatCurrency(this.averageOrderValue), detail: 'Revenue divided by orders', icon: 'AOV', color: 'bg-violet-50 text-violet-600' }]; },
+          async init() { if (localStorage.getItem('user_role') !== 'admin') { window.location.assign(appUrl('/')); return; } this.adminName = localStorage.getItem('user_name') || 'Admin User'; await this.refreshAll(); },
+          async refreshAll() { await Promise.all([this.fetchProducts(), this.fetchOrders()]); },
+          async fetchProducts() { this.loadingProducts = true; try { const response = await fetch(appUrl('/api/products')); if (!response.ok) throw new Error('Products request failed'); this.products = await response.json(); this.apiConnected = true; } catch (error) { console.error(error); this.setConnectionError(); } finally { this.loadingProducts = false; } },
+          async fetchOrders() { this.loadingOrders = true; try { const response = await fetch(appUrl('/api/orders')); if (!response.ok) throw new Error('Orders request failed'); this.orders = await response.json(); this.apiConnected = true; } catch (error) { console.error(error); this.setConnectionError(); } finally { this.loadingOrders = false; } },
+          async createProduct() { const price = Number(this.newProduct.price); if (!this.newProduct.title || !this.newProduct.category || !Number.isFinite(price) || price < 0) { this.showToast('Enter a title, category, and valid price.', 'error'); return; } this.submitting = true; try { const response = await fetch(appUrl('/api/products'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...this.newProduct, price }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Product creation failed'); this.products.unshift(data); this.showCreateModal = false; this.resetProduct(); this.showToast('New product published.', 'success'); } catch (error) { console.error(error); this.setConnectionError(); this.showToast(error.message, 'error'); } finally { this.submitting = false; } },
+          async deleteProduct(id) { if (!window.confirm('Remove this product from the catalog?')) return; try { const response = await fetch(appUrl(`/api/products/${id}`), { method: 'DELETE' }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Product deletion failed'); this.products = this.products.filter((product) => product.id !== id); this.showToast('Product removed from catalog.', 'success'); } catch (error) { console.error(error); this.setConnectionError(); this.showToast(error.message, 'error'); } },
+          resetProduct() { this.newProduct = { title: '', category: '', price: '', image: '', description: '' }; },
+          setConnectionError() { this.apiConnected = false; this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.'; this.showToast(this.connectionError, 'error'); },
+          showToast(message, type = 'info') { const id = ++this.toastId; this.toasts.push({ id, message, type }); setTimeout(() => this.removeToast(id), 3500); }, removeToast(id) { this.toasts = this.toasts.filter((toast) => toast.id !== id); },
+          placeholderImage() { const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#E2E8F0"/><path d="M380 220h140v110H380z" fill="#94A3B8"/><circle cx="425" cy="260" r="12" fill="#F8FAFC"/><path d="m380 330 38-38 28 28 35-42 39 52H380z" fill="#F8FAFC"/></svg>'; return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`; }, fallbackImage(event) { event.target.src = this.placeholderImage(); event.target.onerror = null; },
+          formatCurrency(value) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0)); }, formatDate(value) { return value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'; }, goToStore() { window.location.assign(appUrl('/store')); }, logout() { localStorage.clear(); window.location.assign(appUrl('/')); }
         };
       }
     </script>
   </body>
 </html>
+

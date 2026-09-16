@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-gray-50" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Commerce | Modern Storefront &amp; Merchant HQ</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Alpine.js CDN -->
+<script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+<style>
+    [x-cloak] { display: none !important; }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased font-sans selection:bg-indigo-500 selection:text-white" x-data="commerceApp()" x-init="initApp()">
+<!-- GLOBAL NOTIFICATION TOASTS -->
+<div class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+<template :key="toast.id" x-for="toast in toasts">
+<div :class="{
+             'bg-emerald-50 border-emerald-200 text-emerald-900 shadow-emerald-500/10': toast.type === 'success',
+             'bg-rose-50 border-rose-200 text-rose-900 shadow-rose-500/10': toast.type === 'error',
+             'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-indigo-500/10': toast.type === 'info'
+           }" class="pointer-events-auto transform transition-all duration-300 ease-out flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium">
+<!-- Icon -->
+<template x-if="toast.type === 'success'">
+<svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</template>
+<template x-if="toast.type === 'error'">
+<svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</template>
+<template x-if="toast.type === 'info'">
+<svg class="w-5 h-5 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</template>
+<span class="flex-1" x-text="toast.message"></span>
+<button @click="removeToast(toast.id)" class="text-slate-400 hover:text-slate-600">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</template>
+</div>
+<div class="min-h-full flex flex-col">
+<!-- TOP NAVIGATION BAR -->
+<header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2.5 cursor-pointer">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-lg tracking-tight text-slate-900 leading-none">AURA<span class="text-indigo-600">.HQ</span></span>
+<span class="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] rounded-md font-bold border border-indigo-200 leading-none">Merchant Hub</span>
+</div>
+<span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-0.5">Enterprise Operations Console</span>
+</div>
+</div>
+<div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full border border-slate-200/80 text-[11px] font-medium text-slate-600">
+<span :class="apiConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'" class="w-2 h-2 rounded-full"></span>
+<span x-text="apiConnected ? 'REST API: http://localhost:5000/api' : 'API: http://localhost:5000/api (Offline Fallback)'"></span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button @click="refreshAllData(true)" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200 flex items-center gap-1.5 text-xs font-semibold" title="Refresh API data">
+<svg :class="isLoading ? 'animate-spin text-indigo-600' : ''" class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="hidden md:inline">Sync Data</span>
+</button>
+<button @click="showToast('Switching to Customer Store...', 'info'); activeView = 'store'" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm">
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Switch to Customer Store</span>
+</button>
+</div>
+</div>
+</div></header>
+<!-- MAIN APP WRAPPER -->
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<!-- ================================================================= -->
+<!-- VIEW A: MERCHANT HQ (ADMIN DASHBOARD)                             -->
+<!-- ================================================================= -->
+<section class="space-y-8">
+<!-- Header & Primary Action -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-gray-200">
+<div>
+<div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
+<span>Merchant Hub Console</span>
+<span>•</span>
+<span class="text-slate-400 font-mono">REST API: http://localhost:5000/api</span>
+</div>
+<h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Store Analytics &amp; Operations</h1>
+<p class="text-sm text-slate-500 mt-0.5">Real-time sync of orders, inventory valuation, and catalog lifecycle.</p>
+</div>
+<div class="flex items-center gap-3">
+<button @click="adminTab = 'create'" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-500/20 transition-all">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+<span>+ Add New Product</span>
+</button>
+</div>
+</div>
+<!-- 4 KPI METRIC CARDS -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1: Total Revenue -->
+<div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-indigo-200 transition-colors relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Revenue</span>
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-2xl font-bold tracking-tight text-slate-900" x-text="formatCurrency(statsTotalRevenue)">$804.00</span>
+<span class="text-xs font-semibold text-emerald-600 flex items-center">+14.8%</span>
+</div>
+<p class="text-xs text-slate-400 mt-1">Aggregated across all completed orders</p>
+<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Stat 2: Total Orders -->
+<div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-indigo-200 transition-colors relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Orders</span>
+<div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-2xl font-bold tracking-tight text-slate-900" x-text="orders.length">3</span>
+<span class="text-xs text-slate-500 font-medium">processed</span>
+</div>
+<p class="text-xs text-slate-400 mt-1">Direct from <code class="text-[11px] font-mono">/api/orders</code></p>
+<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Stat 3: Active Catalog Items -->
+<div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-indigo-200 transition-colors relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Catalog</span>
+<div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-2xl font-bold tracking-tight text-slate-900" x-text="products.length">6</span>
+<span class="text-xs text-emerald-600 font-medium">100% In Stock</span>
+</div>
+<p class="text-xs text-slate-400 mt-1">Live SKUs available to shoppers</p>
+<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Stat 4: Average Order Value -->
+<div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-indigo-200 transition-colors relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Avg. Order Value (AOV)</span>
+<div class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-2xl font-bold tracking-tight text-slate-900" x-text="formatCurrency(statsAverageOrderValue)">$268.00</span>
+<span class="text-xs text-slate-500 font-medium">per checkout</span>
+</div>
+<p class="text-xs text-slate-400 mt-1">Revenue / Completed checkouts</p>
+<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<!-- SECTION 1: ORDERS MANAGEMENT (CUSTOMER TRANSACTIONS) -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-lg font-bold text-slate-900">Orders Management</h2>
+<p class="text-xs text-slate-500">Customer transaction log with live settlement state</p>
+</div>
+<span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full font-bold border border-indigo-200" x-text="orders.length + ' Orders Recorded'"></span>
+</div>
+<div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+<!-- Table Action Toolbar -->
+<div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-bold text-slate-900">Recorded Customer Transactions</h3>
+<span class="text-xs text-slate-400">Synchronized via <code class="text-[11px] font-mono">GET /api/orders</code></span>
+</div>
+<div class="flex items-center gap-3">
+<input class="text-xs px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-56" placeholder="Filter by customer or ID..." type="text" x-model="orderSearch"/>
+<button @click="fetchOrders()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Sync Orders
+          </button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+<thead class="bg-slate-50/80 text-xs uppercase font-semibold text-slate-500 tracking-wider">
+<tr>
+<th class="py-3.5 pl-6 pr-3" scope="col">Order ID</th>
+<th class="px-3 py-3.5" scope="col">Customer</th>
+<th class="px-3 py-3.5" scope="col">Items</th>
+<th class="px-3 py-3.5" scope="col">Date</th>
+<th class="px-3 py-3.5" scope="col">Total</th>
+<th class="px-3 py-3.5" scope="col">Status</th>
+<th class="relative py-3.5 pl-3 pr-6 text-right" scope="col">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100 bg-white">
+<template :key="order.id || order._id" x-for="order in filteredOrders">
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="whitespace-nowrap py-4 pl-6 pr-3 font-mono font-medium text-xs text-indigo-600">
+<span x-text="'#' + (order.id || order._id || 'ORD-0').toString().slice(-6)"></span>
+</td>
+<td class="whitespace-nowrap px-3 py-4">
+<div class="font-medium text-slate-900" x-text="order.name || order.customer_name || 'Anonymous Customer'"></div>
+<div class="text-xs text-slate-400" x-text="order.email || 'customer@example.com'"></div>
+</td>
+<td class="whitespace-nowrap px-3 py-4 text-slate-600 font-medium">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+<span x-text="(order.items ? order.items.length : 0) + ' items'"></span>
+</span>
+</td>
+<td class="whitespace-nowrap px-3 py-4 text-xs text-slate-500" x-text="formatDate(order.createdAt || order.date || Date.now())"></td>
+<td class="whitespace-nowrap px-3 py-4 font-semibold text-slate-900" x-text="formatCurrency(calculateOrderTotal(order))"></td>
+<td class="whitespace-nowrap px-3 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span>Completed</span>
+</span>
+</td>
+<td class="whitespace-nowrap py-4 pl-3 pr-6 text-right text-xs">
+<button @click="openOrderModal(order)" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-medium transition-all">
+                    View Items →
+                  </button>
+</td>
+</tr>
+</template>
+<tr x-show="filteredOrders.length === 0">
+<td class="py-12 text-center text-slate-400" colspan="7">
+<svg class="mx-auto h-10 w-10 text-slate-300 mb-2" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+<p class="font-medium text-slate-600">No orders match your search.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- SECTION 2: INVENTORY MANAGER -->
+<div class="space-y-4 pt-4 border-t border-gray-200">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-lg font-bold text-slate-900">Active Catalog &amp; Inventory</h2>
+<p class="text-xs text-slate-500">Manage SKUs, unit pricing, descriptions, and availability</p>
+</div>
+<span class="px-2.5 py-1 bg-amber-50 text-amber-600 text-xs rounded-full font-bold border border-amber-200" x-text="products.length + ' SKUs Active'"></span>
+</div>
+<!-- Inventory Controls Bar -->
+<div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-wrap items-center gap-3 flex-1">
+<div class="relative min-w-[240px]">
+<input class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Search catalog items..." type="text" x-model="inventorySearch"/>
+<svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Category Filter Pills -->
+<div class="flex items-center gap-1.5 overflow-x-auto py-1">
+<button :class="inventoryCategory === 'All' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" @click="inventoryCategory = 'All'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">All</button>
+<template :key="cat" x-for="cat in uniqueCategories">
+<button :class="inventoryCategory === cat ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" @click="inventoryCategory = cat" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap" x-text="cat"></button>
+</template>
+</div>
+</div>
+<button @click="adminTab = 'create'" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">
+<span>+ Add SKU</span>
+</button>
+</div>
+<!-- Inventory Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<template :key="item.id || item._id" x-for="item in filteredInventory">
+<div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group">
+<div>
+<div class="relative h-44 bg-slate-100 overflow-hidden">
+<img :alt="item.title || item.name" :src="item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&amp;auto=format&amp;fit=crop&amp;q=60'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+<div class="absolute top-3 left-3">
+<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/90 backdrop-blur shadow-sm text-slate-800" x-text="item.category || 'General'"></span>
+</div>
+<div class="absolute top-3 right-3">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500 text-white flex items-center gap-1 shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                  Live
+                </span>
+</div>
+</div>
+<div class="p-4 space-y-2">
+<div class="flex items-start justify-between gap-2">
+<h4 class="font-semibold text-slate-900 text-sm line-clamp-1" x-text="item.title || item.name"></h4>
+<span class="font-bold text-slate-900 text-sm whitespace-nowrap" x-text="formatCurrency(item.price)"></span>
+</div>
+<p class="text-xs text-slate-500 line-clamp-2" x-text="item.description || 'Enterprise catalog item.'"></p>
+</div>
+</div>
+<div class="p-4 pt-0 border-t border-gray-100 mt-2 flex items-center justify-between text-xs">
+<span class="text-slate-400 font-mono text-[11px]" x-text="'ID: ' + (item.id || item._id || 'SKU').toString().slice(-5)"></span>
+<button @click="deleteProduct(item.id || item._id)" class="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-semibold flex items-center gap-1 transition-colors" title="Delete product via DELETE /api/products/:id">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Remove</span>
+</button>
+</div>
+</div>
+</template>
+</div>
+</div>
+<!-- MODAL / EXPANDABLE PANEL: CREATE PRODUCT FORM -->
+<div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" x-cloak="" x-show="adminTab === 'create'">
+<div class="bg-white rounded-3xl border border-gray-200 shadow-2xl max-w-2xl w-full overflow-hidden">
+<div class="p-6 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+<div>
+<h3 class="text-lg font-bold text-slate-900">Add New Product to Catalog</h3>
+<p class="text-xs text-slate-500 mt-0.5">Dispatches payload to <code class="font-mono text-indigo-600">POST /api/products</code></p>
+</div>
+<button @click="adminTab = 'orders'" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<form @submit.prevent="submitCreateProduct()" class="p-6 space-y-5">
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Product Title *</label>
+<input class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. Minimalist Wireless Mechanical Keyboard" required="" type="text" x-model="newProduct.title"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Category *</label>
+<select class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white" required="" x-model="newProduct.category">
+<option value="Electronics">Electronics</option>
+<option value="Apparel">Apparel</option>
+<option value="Accessories">Accessories</option>
+<option value="Home &amp; Studio">Home &amp; Studio</option>
+<option value="Audio">Audio</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Price (USD) *</label>
+<div class="relative">
+<span class="absolute left-3.5 top-2.5 text-slate-400 text-sm">$</span>
+<input class="w-full pl-8 pr-3.5 py-2.5 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" min="0" placeholder="129.99" required="" step="0.01" type="number" x-model.number="newProduct.price"/>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Image URL</label>
+<input class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://images.unsplash.com/..." type="url" x-model="newProduct.image"/>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Product Description</label>
+<textarea class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Crafted with aerospace aluminum and hot-swappable switches..." rows="3" x-model="newProduct.description"></textarea>
+</div>
+</div>
+<div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+<button @click="resetNewProductForm(); adminTab = 'orders'" class="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors" type="button">
+            Cancel
+          </button>
+<button :disabled="isSubmitting" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all" type="submit">
+<span>Publish SKU to Catalog</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+<!-- ================================================================= -->
+<!-- VIEW B: CUSTOMER STOREFRONT VIEW                                  -->
+<!-- ================================================================= -->
+</main>
+<!-- FOOTER -->
+<footer class="bg-white border-t border-gray-200 mt-12"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+<div class="flex items-center gap-2">
+<span class="font-bold text-slate-700">AURA.HQ Enterprise</span>
+<span>• Merchant Operations Console</span>
+<span>© 2025 All rights reserved.</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span>REST Protocol: <code class="font-mono text-slate-700">http://localhost:5000/api</code></span>
+</span>
+<span>•</span>
+<button @click="showToast('Switching to Customer Store...', 'info'); activeView = 'store'" class="text-indigo-600 hover:underline font-semibold">
+      Switch to Customer Storefront
+    </button>
+</div>
+</div></footer>
+<!-- ================================================================= -->
+<!-- SLIDE-OVER MODAL 1: SHOPPING CART & CHECKOUT DRAWER               -->
+<!-- ================================================================= -->
+<!-- ================================================================= -->
+<!-- SLIDE-OVER MODAL 2: ORDER DETAILS SLIDE-OVER MODAL                -->
+<!-- ================================================================= -->
+<div aria-labelledby="order-details-title" aria-modal="true" class="relative z-50" role="dialog" x-cloak="" x-show="isOrderModalOpen">
+<div @click="isOrderModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" x-show="isOrderModalOpen" x-transition:enter="ease-in-out duration-300" x-transition:enter-end="opacity-100" x-transition:enter-start="opacity-0" x-transition:leave="ease-in-out duration-300" x-transition:leave-end="opacity-0" x-transition:leave-start="opacity-100"></div>
+<div class="fixed inset-0 overflow-hidden">
+<div class="absolute inset-0 overflow-hidden">
+<div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+<div class="pointer-events-auto w-screen max-w-lg" x-show="isOrderModalOpen" x-transition:enter="transform transition ease-in-out duration-300" x-transition:enter-end="translate-x-0" x-transition:enter-start="translate-x-full" x-transition:leave="transform transition ease-in-out duration-300" x-transition:leave-end="translate-x-full" x-transition:leave-start="translate-x-0">
+<div class="flex h-full flex-col bg-white shadow-2xl" x-if="selectedOrder">
+<!-- Header -->
+<div class="p-6 border-b border-gray-200 flex items-center justify-between bg-slate-50">
+<div>
+<span class="text-xs uppercase tracking-wider font-semibold text-indigo-600">Order Invoice Detail</span>
+<h3 class="text-lg font-bold text-slate-900" x-text="'Order #' + (selectedOrder ? (selectedOrder.id || selectedOrder._id || '0').toString().slice(-6) : '')"></h3>
+</div>
+<button @click="isOrderModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<!-- Content -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Customer Info Card -->
+<div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+<span class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Customer Profile</span>
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Name:</span>
+<span class="font-bold text-slate-900" x-text="selectedOrder ? (selectedOrder.name || selectedOrder.customer_name || 'N/A') : ''"></span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Email:</span>
+<span class="font-mono text-xs font-semibold text-indigo-600" x-text="selectedOrder ? (selectedOrder.email || 'N/A') : ''"></span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Timestamp:</span>
+<span class="text-xs text-slate-600" x-text="selectedOrder ? formatDate(selectedOrder.createdAt || selectedOrder.date) : ''"></span>
+</div>
+<div class="flex justify-between items-center text-sm pt-1 border-t border-slate-200/60">
+<span class="text-slate-500">Fulfillment Status:</span>
+<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">Completed</span>
+</div>
+</div>
+<!-- Purchased Items Breakdown -->
+<div class="space-y-3">
+<h4 class="text-xs uppercase font-bold text-slate-700 tracking-wider">Items Ordered</h4>
+<div class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white">
+<template :key="idx" x-for="(item, idx) in (selectedOrder ? (selectedOrder.items || []) : [])">
+<div class="p-3.5 flex items-center justify-between hover:bg-slate-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center text-xs" x-text="(item.quantity || 1) + 'x'"></div>
+<div>
+<div class="text-xs font-semibold text-slate-900" x-text="item.title || item.name || 'Catalog Item'"></div>
+<div class="text-[11px] text-slate-400" x-text="formatCurrency(item.price || 0) + ' each'"></div>
+</div>
+</div>
+<div class="text-xs font-bold text-slate-900" x-text="formatCurrency((item.price || 0) * (item.quantity || 1))"></div>
+</div>
+</template>
+<div class="p-4 text-center text-xs text-slate-400" x-show="!selectedOrder || !selectedOrder.items || selectedOrder.items.length === 0">
+                        No individual items specified in payload.
+                      </div>
+</div>
+</div>
+<!-- Order Total -->
+<div class="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between">
+<div>
+<span class="text-xs text-slate-500 font-medium">Gross Total Paid</span>
+<div class="text-xl font-extrabold text-indigo-900" x-text="selectedOrder ? formatCurrency(calculateOrderTotal(selectedOrder)) : '$0.00'"></div>
+</div>
+<span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-sm">Verified Settlement</span>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="p-6 border-t border-gray-200 bg-slate-50">
+<button @click="isOrderModalOpen = false" class="w-full py-2.5 rounded-xl border border-gray-300 text-slate-700 hover:bg-white font-semibold text-xs shadow-sm">
+                    Close Slide-Over
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- APPLICATION LOGIC (Alpine.js) -->
+<script>
+    function commerceApp() {
+      return {
+        // API Base URL
+        apiBase: 'http://localhost:5000/api',
+        apiConnected: false,
+        isLoading: false,
+        isSubmitting: false,
+        isCheckingOut: false,
+
+        // Active State Views
+        activeView: 'admin', // 'admin' or 'store'
+        adminTab: 'orders',   // 'orders', 'inventory', 'create'
+        
+        // Modals / Drawers
+        isCartOpen: false,
+        isOrderModalOpen: false,
+        selectedOrder: null,
+
+        // Search & Filters
+        orderSearch: '',
+        inventorySearch: '',
+        inventoryCategory: 'All',
+        storeSearch: '',
+        storeCategory: 'All',
+
+        // Data Stores
+        products: [],
+        orders: [],
+        cart: [],
+        toasts: [],
+
+        // Forms
+        newProduct: {
+          title: '',
+          category: 'Electronics',
+          price: '',
+          image: '',
+          description: ''
+        },
+        checkoutCustomer: {
+          name: '',
+          email: ''
+        },
+
+        // Mock Fallback Data in case the backend server at localhost:5000 is still starting up
+        mockProducts: [
+          { id: 'prod-101', title: 'Aura Studio Mechanical Keyboard', category: 'Electronics', price: 169.00, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&auto=format&fit=crop&q=80', description: 'Gasket-mounted hot-swap switch architecture with CNC anodized finish.' },
+          { id: 'prod-102', title: 'Precision CNC Aluminum Mousepad', category: 'Accessories', price: 49.00, image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&auto=format&fit=crop&q=80', description: 'Micro-textured low friction gliding surface for enterprise desk setups.' },
+          { id: 'prod-103', title: 'Acoustic Active Noise-Cancelling Headphones', category: 'Audio', price: 299.00, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80', description: 'High-fidelity lossless spatial audio drivers with 40-hour continuous battery.' },
+          { id: 'prod-104', title: 'Minimalist Weatherproof Commuter Bag', category: 'Apparel', price: 129.00, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80', description: 'Cordura ballistic nylon, dedicated padded 16-inch laptop compartment.' },
+          { id: 'prod-105', title: 'Ergonomic Desk LED Monitor Light Bar', category: 'Home & Studio', price: 89.00, image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80', description: 'Auto-dimming ambient sensor with asymmetric optical design.' },
+          { id: 'prod-106', title: 'Ergonomic Vertical Wireless Pointer', category: 'Electronics', price: 79.00, image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&auto=format&fit=crop&q=80', description: '57-degree natural handshake angle reducing forearm strain and wrist pressure.' }
+        ],
+
+        mockOrders: [
+          {
+            id: 'ord-89410',
+            name: 'Sophia Laurent',
+            email: 'sophia@acme-corp.com',
+            createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+            items: [
+              { title: 'Aura Studio Mechanical Keyboard', price: 169.00, quantity: 1 },
+              { title: 'Precision CNC Aluminum Mousepad', price: 49.00, quantity: 1 }
+            ]
+          },
+          {
+            id: 'ord-89411',
+            name: 'Marcus Vance',
+            email: 'marcus@blackmesa.io',
+            createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+            items: [
+              { title: 'Acoustic Active Noise-Cancelling Headphones', price: 299.00, quantity: 1 }
+            ]
+          },
+          {
+            id: 'ord-89412',
+            name: 'Aisha Chen',
+            email: 'aisha.chen@nexus.design',
+            createdAt: new Date(Date.now() - 3600000 * 32).toISOString(),
+            items: [
+              { title: 'Minimalist Weatherproof Commuter Bag', price: 129.00, quantity: 1 },
+              { title: 'Ergonomic Vertical Wireless Pointer', price: 79.00, quantity: 2 }
+            ]
+          }
+        ],
+
+        // Lifecycle Initializer
+        async initApp() {
+          await this.refreshAllData(false);
+        },
+
+        // API Fetch Products
+        async fetchProducts() {
+          this.isLoading = true;
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch(`${this.apiBase}/products`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            this.products = Array.isArray(data) ? data : (data.products || []);
+            this.apiConnected = true;
+          } catch (err) {
+            console.warn('API /api/products unavailable, loading resilient local fallback:', err);
+            if (this.products.length === 0) {
+              this.products = [...this.mockProducts];
+            }
+            this.apiConnected = false;
+          } finally {
+            this.isLoading = false;
+          }
+        },
+
+        // API Fetch Orders
+        async fetchOrders() {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch(`${this.apiBase}/orders`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            this.orders = Array.isArray(data) ? data : (data.orders || []);
+            this.apiConnected = true;
+          } catch (err) {
+            console.warn('API /api/orders unavailable, loading resilient local fallback:', err);
+            if (this.orders.length === 0) {
+              this.orders = [...this.mockOrders];
+            }
+          }
+        },
+
+        async refreshAllData(showNotification = true) {
+          this.isLoading = true;
+          await Promise.all([this.fetchProducts(), this.fetchOrders()]);
+          this.isLoading = false;
+          if (showNotification) {
+            this.showToast(this.apiConnected ? 'Synced with http://localhost:5000/api' : 'API offline: working in preview state', this.apiConnected ? 'success' : 'info');
+          }
+        },
+
+        // API Create Product (POST /api/products)
+        async submitCreateProduct() {
+          if (!this.newProduct.title || !this.newProduct.price) {
+            this.showToast('Please fill in required title and price fields', 'error');
+            return;
+          }
+
+          this.isSubmitting = true;
+          const payload = {
+            title: this.newProduct.title,
+            category: this.newProduct.category,
+            price: Number(this.newProduct.price),
+            description: this.newProduct.description,
+            image: this.newProduct.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'
+          };
+
+          try {
+            const res = await fetch(`${this.apiBase}/products`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error(`Failed with status: ${res.status}`);
+            const created = await res.json();
+            this.showToast('Product published to catalog successfully!', 'success');
+            await this.fetchProducts();
+          } catch (err) {
+            console.warn('API post error, applying optimistic update:', err);
+            // Optimistic Fallback creation
+            const fallbackItem = { ...payload, id: 'prod-' + Date.now().toString().slice(-5) };
+            this.products.unshift(fallbackItem);
+            this.showToast('Created product (Demo fallback mode)', 'info');
+          } finally {
+            this.isSubmitting = false;
+            this.resetNewProductForm();
+            this.adminTab = 'inventory';
+          }
+        },
+
+        // API Delete Product (DELETE /api/products/:id)
+        async deleteProduct(id) {
+          if (!confirm('Are you sure you want to remove this SKU from inventory?')) return;
+
+          try {
+            const res = await fetch(`${this.apiBase}/products/${id}`, {
+              method: 'DELETE'
+            });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            this.showToast('Product removed from catalog', 'success');
+            await this.fetchProducts();
+          } catch (err) {
+            console.warn('API delete error, applying optimistic removal:', err);
+            this.products = this.products.filter(p => (p.id || p._id) !== id);
+            this.showToast('Product deleted from view', 'info');
+          }
+        },
+
+        // API Checkout Order (POST /api/orders)
+        async submitCheckoutOrder() {
+          if (!this.checkoutCustomer.name || !this.checkoutCustomer.email) {
+            this.showToast('Please provide your name and email', 'error');
+            return;
+          }
+
+          this.isCheckingOut = true;
+          const orderPayload = {
+            name: this.checkoutCustomer.name,
+            customer_name: this.checkoutCustomer.name,
+            email: this.checkoutCustomer.email,
+            items: this.cart.map(i => ({
+              id: i.id || i._id,
+              title: i.title || i.name,
+              price: Number(i.price),
+              quantity: i.quantity
+            })),
+            total: this.cartTotal,
+            date: new Date().toISOString()
+          };
+
+          try {
+            const res = await fetch(`${this.apiBase}/orders`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderPayload)
+            });
+
+            if (!res.ok) throw new Error(`Checkout failed: ${res.status}`);
+            const confirmedOrder = await res.json();
+            
+            this.showToast('Order confirmed! Receipt sent to ' + this.checkoutCustomer.email, 'success');
+            await this.fetchOrders();
+          } catch (err) {
+            console.warn('API checkout error, performing local order capture:', err);
+            const fallbackOrder = {
+              ...orderPayload,
+              id: 'ord-' + Date.now().toString().slice(-5),
+              createdAt: new Date().toISOString()
+            };
+            this.orders.unshift(fallbackOrder);
+            this.showToast('Order captured successfully!', 'success');
+          } finally {
+            this.isCheckingOut = false;
+            this.cart = [];
+            this.checkoutCustomer = { name: '', email: '' };
+            this.isCartOpen = false;
+          }
+        },
+
+        // Cart Actions
+        addToCart(product) {
+          const prodId = product.id || product._id;
+          const existing = this.cart.find(item => (item.id || item._id) === prodId);
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            this.cart.push({ ...product, quantity: 1 });
+          }
+          this.showToast(`Added "${product.title || product.name}" to cart`, 'success');
+        },
+
+        updateCartQuantity(id, delta) {
+          const item = this.cart.find(i => (i.id || i._id) === id);
+          if (!item) return;
+          item.quantity += delta;
+          if (item.quantity <= 0) {
+            this.removeFromCart(id);
+          }
+        },
+
+        removeFromCart(id) {
+          this.cart = this.cart.filter(i => (i.id || i._id) !== id);
+        },
+
+        // Order Modal Detail
+        openOrderModal(order) {
+          this.selectedOrder = order;
+          this.isOrderModalOpen = true;
+        },
+
+        // Helper Preset loader for creation form
+        applyPreset(type) {
+          if (type === 'keyboard') {
+            this.newProduct = {
+              title: 'Luminary Pro Mechanical 75%',
+              category: 'Electronics',
+              price: 189.00,
+              image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&auto=format&fit=crop&q=80',
+              description: 'Custom lubed switches with internal silicon dampening pads.'
+            };
+          } else if (type === 'headphones') {
+            this.newProduct = {
+              title: 'Studio Master Reference Monitors',
+              category: 'Audio',
+              price: 349.00,
+              image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
+              description: 'Ultra-flat frequency curve calibrated for mix engineers and audiophiles.'
+            };
+          } else if (type === 'backpack') {
+            this.newProduct = {
+              title: 'Apex Modular Roll-Top Pack',
+              category: 'Apparel',
+              price: 145.00,
+              image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80',
+              description: 'Expandable 24-32L volume with Fidlock magnetic buckle systems.'
+            };
+          }
+        },
+
+        resetNewProductForm() {
+          this.newProduct = {
+            title: '',
+            category: 'Electronics',
+            price: '',
+            image: '',
+            description: ''
+          };
+        },
+
+        // Toast System
+        showToast(message, type = 'info') {
+          const id = Date.now() + Math.random();
+          this.toasts.push({ id, message, type });
+          setTimeout(() => {
+            this.removeToast(id);
+          }, 3500);
+        },
+
+        removeToast(id) {
+          this.toasts = this.toasts.filter(t => t.id !== id);
+        },
+
+        // Computed / Filter Getters
+        get uniqueCategories() {
+          const cats = new Set(this.products.map(p => p.category).filter(Boolean));
+          return Array.from(cats);
+        },
+
+        get filteredOrders() {
+          if (!this.orderSearch.trim()) return this.orders;
+          const q = this.orderSearch.toLowerCase();
+          return this.orders.filter(o => {
+            const idMatch = (o.id || o._id || '').toString().toLowerCase().includes(q);
+            const nameMatch = (o.name || o.customer_name || '').toLowerCase().includes(q);
+            const emailMatch = (o.email || '').toLowerCase().includes(q);
+            return idMatch || nameMatch || emailMatch;
+          });
+        },
+
+        get filteredInventory() {
+          return this.products.filter(p => {
+            const matchesCat = this.inventoryCategory === 'All' || p.category === this.inventoryCategory;
+            const matchesSearch = !this.inventorySearch.trim() || 
+              (p.title || p.name || '').toLowerCase().includes(this.inventorySearch.toLowerCase()) ||
+              (p.description || '').toLowerCase().includes(this.inventorySearch.toLowerCase());
+            return matchesCat && matchesSearch;
+          });
+        },
+
+        get filteredStoreProducts() {
+          return this.products.filter(p => {
+            const matchesCat = this.storeCategory === 'All' || p.category === this.storeCategory;
+            const matchesSearch = !this.storeSearch.trim() || 
+              (p.title || p.name || '').toLowerCase().includes(this.storeSearch.toLowerCase()) ||
+              (p.description || '').toLowerCase().includes(this.storeSearch.toLowerCase());
+            return matchesCat && matchesSearch;
+          });
+        },
+
+        get statsTotalRevenue() {
+          return this.orders.reduce((sum, order) => sum + this.calculateOrderTotal(order), 0);
+        },
+
+        get statsAverageOrderValue() {
+          if (this.orders.length === 0) return 0;
+          return this.statsTotalRevenue / this.orders.length;
+        },
+
+        get cartTotalItems() {
+          return this.cart.reduce((total, item) => total + item.quantity, 0);
+        },
+
+        get cartSubtotal() {
+          return this.cart.reduce((total, item) => total + ((item.price || 0) * item.quantity), 0);
+        },
+
+        get cartTax() {
+          return this.cartSubtotal * 0.08;
+        },
+
+        get cartTotal() {
+          return this.cartSubtotal + this.cartTax;
+        },
+
+        // Helper calculations
+        calculateOrderTotal(order) {
+          if (order.total !== undefined && Number(order.total) > 0) {
+            return Number(order.total);
+          }
+          if (Array.isArray(order.items)) {
+            return order.items.reduce((sum, i) => sum + ((Number(i.price) || 0) * (Number(i.quantity) || 1)), 0);
+          }
+          return 0;
+        },
+
+        formatCurrency(val) {
+          const num = Number(val) || 0;
+          return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        },
+
+        formatDate(dateVal) {
+          if (!dateVal) return 'Recently';
+          try {
+            const d = new Date(dateVal);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          } catch(e) {
+            return 'Just now';
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>

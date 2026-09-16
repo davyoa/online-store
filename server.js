@@ -11,37 +11,35 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
-const PORT = 5000;
-
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname, { index: false }));
-
-const pool = mysql.createPool({
+const PORT = Number(process.env.APP_PORT || process.env.PORT || 5000);
+const databaseConfig = {
   host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'swiftshop',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  charset: 'utf8mb4'
-});
+  charset: 'utf8mb4',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+};
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname, { index: false }));
+
+const pool = mysql.createPool(databaseConfig);
 
 async function initializeDatabase() {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schemaSql = await fs.readFile(schemaPath, 'utf8');
-  const bootstrapConnection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    multipleStatements: false,
-    charset: 'utf8mb4'
-  });
+  const bootstrapConnection = await mysql.createConnection(databaseConfig);
 
   try {
     const statements = schemaSql
+      .replace(/^\s*--.*$/gm, '')
       .split(/;\s*(?:\r?\n|$)/)
       .map((statement) => statement.trim())
       .filter(Boolean);

@@ -3,286 +3,75 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SwiftShop | Store</title>
+    <title>SwiftShop | Customer Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
-    <script>
-      const appUrl = (path) => new URL(path, window.location.origin).toString();
-    </script>
+    <script>const appUrl = (path) => new URL(path, window.location.origin).toString();</script>
     <style>
-      body { background: #F9FAFB; }
-      .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
-      .primary-btn { background: #4F46E5; color: #FFFFFF; }
-      .primary-btn:hover { background: #4338CA; }
-      .secondary-btn { background: #F3F4F6; color: #111827; border: 1px solid #E5E7EB; }
-      .badge { background: #EEF2FF; color: #3730A3; }
-      @keyframes badge-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.2); } }
+      [x-cloak] { display: none !important; }
+      body { background: #F8FAFC; }
+      .flat-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+      .primary-button { background: #4F46E5; color: #FFFFFF; }
+      .primary-button:hover { background: #4338CA; }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .badge-pop { animation: badge-pop 360ms ease-out; }
+      @keyframes badge-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.2); } }
       .spinner { width: 1rem; height: 1rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 9999px; animation: spin 650ms linear infinite; }
+      .badge-pop { animation: badge-pop 360ms ease-out; }
     </style>
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-800" x-data="storeApp()" x-init="init()">
-    <div x-show="connectionError" x-transition class="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 shadow-sm" x-text="connectionError"></div>
-    <div class="fixed right-4 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
-      <template x-for="toast in toasts" :key="toast.id">
-        <div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-3" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm" x-text="toast.message"></div>
-      </template>
+  <body class="min-h-screen text-slate-800 antialiased" x-data="storefrontApp()" x-init="init()">
+    <div class="pointer-events-none fixed right-5 top-5 z-50 flex w-[calc(100%-2.5rem)] max-w-sm flex-col gap-2">
+      <template x-for="toast in toasts" :key="toast.id"><div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-3" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg" :class="toast.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'"><span class="flex-1" x-text="toast.message"></span><button type="button" @click="removeToast(toast.id)">x</button></div></template>
     </div>
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 text-lg font-bold text-white">S</div>
-          <div>
-            <div class="text-lg font-bold text-slate-900">SwiftShop</div>
-            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Storefront</div>
-          </div>
-        </div>
+    <div x-show="connectionError" x-transition class="fixed left-1/2 top-5 z-40 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-800 shadow-sm" x-text="connectionError"></div>
 
-        <div class="hidden flex-1 max-w-xl md:block">
-          <input x-model="search" type="text" placeholder="Search products..." class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-indigo-500" />
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button type="button" class="relative rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="cartOpen = true">
-            Cart
-            <span x-show="cartCount > 0" class="badge absolute -right-2 -top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold" :class="badgePulse ? 'badge-pop' : ''" x-text="cartCount"></span>
-          </button>
-          <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="logout()">Logout</button>
-        </div>
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <a class="flex items-center gap-3" :href="appUrl('/store')">
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white shadow-sm">S</span>
+          <span><span class="block text-lg font-bold tracking-tight text-slate-900">SWIFTSHOP<span class="text-indigo-600">.CO</span></span><span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Curated modern essentials</span></span>
+        </a>
+        <div class="hidden max-w-xl flex-1 px-8 md:block"><div class="relative"><input x-model="search" type="search" placeholder="Search the collection..." class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500" /><span class="pointer-events-none absolute right-4 top-2.5 text-xs text-slate-400">Search</span></div></div>
+        <div class="flex items-center gap-2"><button type="button" class="relative rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" @click="cartOpen = true">Cart<span x-show="cartCount" class="absolute -right-2 -top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white" :class="badgePulse ? 'badge-pop' : ''" x-text="cartCount"></span></button><button type="button" class="rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" @click="logout()">Logout</button></div>
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Fresh picks</p>
-            <h1 class="mt-2 text-3xl font-bold text-slate-900">Everyday essentials, ready to ship.</h1>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Free delivery on orders over $150
-          </div>
-        </div>
+    <main class="mx-auto max-w-7xl space-y-10 px-4 py-7 sm:px-6 lg:px-8">
+      <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 px-6 py-12 text-white shadow-sm sm:px-12 sm:py-16">
+        <div class="relative z-10 max-w-2xl"><div class="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-500/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-200"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300"></span>New collection live</div><h1 class="text-4xl font-bold tracking-tight sm:text-6xl">Better tools for the way you work.</h1><p class="mt-5 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Thoughtful hardware and everyday essentials, selected for focused desks, creative rooms, and life in motion.</p><button type="button" class="primary-button mt-7 rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition hover:scale-[1.02] active:scale-[0.98]" @click="scrollToCatalog()">Explore collection</button></div><div class="pointer-events-none absolute -bottom-24 -right-10 h-80 w-80 rounded-full border-[36px] border-indigo-500/20"></div><div class="pointer-events-none absolute -right-20 top-8 h-44 w-44 rounded-full border-[20px] border-slate-700"></div>
       </section>
 
-      <div class="mb-6 flex flex-wrap items-center gap-2">
-        <button type="button" class="rounded-lg border px-3 py-2 text-sm font-medium" :class="category === 'All' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-700'" @click="category = 'All'">All</button>
-        <template x-for="item in categories" :key="item">
-          <button type="button" class="rounded-lg border px-3 py-2 text-sm font-medium" :class="category === item ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-700'" @click="category = item" x-text="item"></button>
-        </template>
-      </div>
-
-      <div x-show="loadingProducts" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <template x-for="item in [1, 2, 3, 4]" :key="item">
-          <div class="h-96 animate-pulse rounded-2xl border border-slate-200 bg-white p-4"><div class="h-52 rounded-lg bg-slate-200"></div><div class="mt-4 h-5 w-3/4 rounded bg-slate-200"></div><div class="mt-3 h-4 w-full rounded bg-slate-100"></div><div class="mt-5 h-10 rounded-lg bg-slate-200"></div></div>
-        </template>
-      </div>
-
-      <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4" x-show="!loadingProducts && filteredProducts.length">
-        <template x-for="product in filteredProducts" :key="product.id">
-          <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-transform duration-150 hover:scale-[1.02]">
-            <img :src="product.image || placeholderImage()" @error="fallbackImage($event)" :alt="product.title" class="h-52 w-full bg-slate-100 object-cover" />
-            <div class="p-4">
-              <div class="mb-2 flex items-center justify-between gap-3">
-                <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600" x-text="product.category || 'General'"></span>
-                <span class="text-lg font-bold text-slate-900" x-text="formatPrice(product.price)"></span>
-              </div>
-              <h2 class="mb-2 text-lg font-semibold text-slate-900" x-text="product.title"></h2>
-              <p class="mb-4 text-sm text-slate-600" x-text="product.description || 'High-quality item for your everyday needs.'"></p>
-              <button type="button" class="primary-btn w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]" @click="addToCart(product)">Add to cart</button>
-            </div>
-          </article>
-        </template>
-      </div>
-
-      <div x-show="!loadingProducts && !filteredProducts.length" class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-        No products match your search.
-      </div>
+      <section id="catalog" class="space-y-5"><div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><div class="mb-1 text-xs font-semibold uppercase tracking-wider text-indigo-600">The collection</div><h2 class="text-2xl font-bold tracking-tight text-slate-900">Available goods</h2><p class="mt-1 text-sm text-slate-500">Live catalog, ready for delivery.</p></div><div class="flex items-center gap-2 overflow-x-auto"><button type="button" class="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold" :class="category === 'All' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="category = 'All'">All products</button><template x-for="item in categories" :key="item"><button type="button" class="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold" :class="category === item ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="category = item" x-text="item"></button></template></div></div>
+        <div x-show="loadingProducts" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><template x-for="item in [1,2,3,4]" :key="item"><div class="h-96 animate-pulse rounded-2xl border border-slate-200 bg-white p-4"><div class="h-52 rounded-xl bg-slate-200"></div><div class="mt-4 h-5 w-3/4 rounded bg-slate-200"></div><div class="mt-3 h-3 rounded bg-slate-100"></div><div class="mt-5 h-10 rounded bg-slate-100"></div></div></template></div>
+        <div x-show="!loadingProducts && filteredProducts.length" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><template x-for="product in filteredProducts" :key="product.id"><article class="flat-card group flex flex-col justify-between overflow-hidden rounded-2xl transition duration-150 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md"><div><div class="relative h-52 overflow-hidden bg-slate-100"><img :src="product.image || placeholderImage()" @error="fallbackImage($event)" :alt="product.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><span class="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700 shadow-sm" x-text="product.category || 'General'"></span></div><div class="space-y-2 p-4"><div class="flex items-start justify-between gap-3"><h3 class="text-base font-semibold text-slate-900" x-text="product.title"></h3><span class="whitespace-nowrap text-base font-bold text-slate-900" x-text="formatCurrency(product.price)"></span></div><p class="line-clamp-2 text-xs leading-5 text-slate-500" x-text="product.description || 'A considered essential for your everyday setup.'"></p></div></div><div class="border-t border-slate-100 p-4"><button type="button" class="primary-button flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition hover:scale-[1.02] active:scale-[0.98]" @click="addToCart(product)"><span class="text-base leading-none">+</span>Add to cart</button></div></article></template></div>
+        <div x-show="!loadingProducts && !filteredProducts.length" class="flat-card rounded-2xl border-dashed px-5 py-14 text-center text-sm text-slate-500">No products match your search or category.</div>
+      </section>
     </main>
 
-    <div x-show="cartOpen" x-transition:enter="transition-opacity duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-30 bg-slate-900/20" @click="cartOpen = false"></div>
-    <aside x-show="cartOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-xl">
-      <div class="flex h-full flex-col">
-        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 class="text-xl font-bold text-slate-900">Your cart</h2>
-          <button type="button" class="text-sm text-slate-500" @click="cartOpen = false">Close</button>
-        </div>
-
-        <div class="flex-1 space-y-4 overflow-y-auto p-5">
-          <template x-if="cart.length === 0">
-            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
-              Your cart is empty.
-            </div>
-          </template>
-
-          <template x-for="item in cart" :key="item.id">
-            <div class="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-              <img :src="item.image || placeholderImage()" @error="fallbackImage($event)" :alt="item.title" class="h-16 w-16 rounded-lg bg-slate-100 object-cover" />
-              <div class="flex-1">
-                <div class="text-sm font-semibold text-slate-900" x-text="item.title"></div>
-                <div class="mt-1 text-xs text-slate-500" x-text="formatPrice(item.price) + ' each'"></div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" class="h-7 w-7 rounded-lg border border-slate-200 text-sm" @click="updateQty(item.id, -1)">-</button>
-                <span class="min-w-5 text-center text-sm font-medium" x-text="item.qty"></span>
-                <button type="button" class="h-7 w-7 rounded-lg border border-slate-200 text-sm" @click="updateQty(item.id, 1)">+</button>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <div class="border-t border-slate-200 p-5">
-          <div class="mb-4 flex items-center justify-between text-sm text-slate-600">
-            <span>Subtotal</span>
-            <span class="font-semibold text-slate-900" x-text="formatPrice(cartTotal)"></span>
-          </div>
-
-          <form @submit.prevent="checkout()" class="space-y-3">
-            <input x-model="checkoutName" type="text" placeholder="Your name" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
-            <input x-model="checkoutEmail" type="email" placeholder="Your email" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
-            <button type="submit" class="primary-btn flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70" :disabled="cart.length === 0 || submitting">
-              <span x-show="submitting" class="spinner"></span>
-              <span x-text="submitting ? 'Processing...' : 'Checkout'"></span>
-            </button>
-          </form>
-        </div>
-      </div>
+    <div x-cloak x-show="cartOpen" x-transition:enter="transition-opacity duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-40 bg-slate-900/40" @click="cartOpen = false"></div>
+    <aside x-cloak x-show="cartOpen" x-transition:enter="transition ease-out duration-250" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-5"><div><div class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Your selection</div><h2 class="mt-1 text-xl font-bold text-slate-900">Shopping bag</h2></div><button type="button" class="rounded-lg px-2 py-1 text-xl text-slate-400 hover:bg-white hover:text-slate-700" @click="cartOpen = false">x</button></div>
+      <div class="flex-1 space-y-3 overflow-y-auto p-6"><template x-if="!cart.length"><div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center text-sm text-slate-500">Your bag is waiting for something great.</div></template><template x-for="item in cart" :key="item.id"><div class="flex gap-3 rounded-xl border border-slate-200 p-3"><img :src="item.image || placeholderImage()" @error="fallbackImage($event)" :alt="item.title" class="h-16 w-16 rounded-lg bg-slate-100 object-cover" /><div class="min-w-0 flex-1"><div class="truncate text-sm font-semibold text-slate-900" x-text="item.title"></div><div class="mt-1 text-xs text-slate-500" x-text="formatCurrency(item.price) + ' each'"></div><div class="mt-2 flex items-center gap-2"><button type="button" class="h-7 w-7 rounded-lg border border-slate-200" @click="updateQty(item.id, -1)">-</button><span class="w-5 text-center text-xs font-semibold" x-text="item.qty"></span><button type="button" class="h-7 w-7 rounded-lg border border-slate-200" @click="updateQty(item.id, 1)">+</button></div></div><div class="text-sm font-bold text-slate-900" x-text="formatCurrency(item.price * item.qty)"></div></div></template></div>
+      <div class="border-t border-slate-200 p-6"><div class="mb-4 flex items-center justify-between"><span class="text-sm text-slate-500">Order total</span><span class="text-xl font-bold text-slate-900" x-text="formatCurrency(cartTotal)"></span></div><form class="space-y-3" @submit.prevent="checkout()"><input x-model.trim="checkoutName" type="text" required placeholder="Your name" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /><input x-model.trim="checkoutEmail" type="email" required placeholder="Your email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /><button type="submit" class="primary-button flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60" :disabled="!cart.length || submitting"><span x-show="submitting" class="spinner"></span><span x-text="submitting ? 'Processing order...' : 'Complete checkout'"></span></button></form></div>
     </aside>
 
     <script>
-      function storeApp() {
+      function storefrontApp() {
         return {
-          products: [],
-          search: '',
-          category: 'All',
-          cart: [],
-          cartOpen: false,
-          checkoutName: '',
-          checkoutEmail: '',
-          submitting: false,
-          loadingProducts: true,
-          connectionError: '',
-          toasts: [],
-          badgePulse: false,
-          toastId: 0,
-          get categories() {
-            return ['All', ...new Set(this.products.map((p) => p.category || 'General'))];
-          },
-          get filteredProducts() {
-            const q = this.search.trim().toLowerCase();
-            return this.products.filter((product) => {
-              const matchesCategory = this.category === 'All' || (product.category || 'General') === this.category;
-              const matchesSearch = !q || (product.title || '').toLowerCase().includes(q) || (product.description || '').toLowerCase().includes(q);
-              return matchesCategory && matchesSearch;
-            });
-          },
-          get cartCount() {
-            return this.cart.reduce((sum, item) => sum + item.qty, 0);
-          },
-          get cartTotal() {
-            return this.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-          },
-          async init() {
-            const role = localStorage.getItem('user_role');
-            if (role === 'admin') {
-              window.location.assign(appUrl('/admin'));
-              return;
-            }
-            await this.fetchProducts();
-            this.checkoutName = localStorage.getItem('user_name') || '';
-            this.checkoutEmail = localStorage.getItem('user_email') || '';
-          },
-          async fetchProducts() {
-            this.loadingProducts = true;
-            this.connectionError = '';
-            try {
-              const response = await fetch(appUrl('/api/products'));
-              if (!response.ok) throw new Error('Failed to load products');
-              this.products = await response.json();
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast('Products could not be loaded.');
-            } finally {
-              this.loadingProducts = false;
-            }
-          },
-          showToast(message) {
-            const id = ++this.toastId;
-            this.toasts.push({ id, message });
-            setTimeout(() => { this.toasts = this.toasts.filter((toast) => toast.id !== id); }, 3000);
-          },
-          placeholderImage() {
-            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#E5E7EB"/><path d="M380 220h140v110H380z" fill="#9CA3AF"/><circle cx="425" cy="260" r="12" fill="#F9FAFB"/><path d="m380 330 38-38 28 28 35-42 39 52H380z" fill="#F9FAFB"/></svg>';
-            return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-          },
-          fallbackImage(event) {
-            event.target.src = this.placeholderImage();
-            event.target.onerror = null;
-          },
-          addToCart(product) {
-            const exists = this.cart.find((item) => item.id === product.id);
-            if (exists) {
-              exists.qty += 1;
-            } else {
-              this.cart.push({ ...product, qty: 1 });
-            }
-            this.badgePulse = false;
-            requestAnimationFrame(() => { this.badgePulse = true; setTimeout(() => { this.badgePulse = false; }, 400); });
-            this.showToast(`${product.title} added to cart.`);
-            this.cartOpen = true;
-          },
-          updateQty(productId, change) {
-            const item = this.cart.find((entry) => entry.id === productId);
-            if (!item) return;
-            item.qty += change;
-            if (item.qty <= 0) {
-              this.cart = this.cart.filter((entry) => entry.id !== productId);
-            }
-          },
-          formatPrice(value) {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
-          },
-          async checkout() {
-            if (!this.cart.length) {
-              alert('Your cart is empty.');
-              return;
-            }
-
-            this.submitting = true;
-
-            try {
-              const payload = {
-                name: this.checkoutName,
-                email: this.checkoutEmail,
-                items: this.cart.map((item) => ({ id: item.id, price: Number(item.price), qty: item.qty }))
-              };
-
-              const response = await fetch(appUrl('/api/orders'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-
-              const result = await response.json();
-              if (!response.ok) throw new Error(result.error || 'Checkout failed');
-
-              this.cart = [];
-              this.cartOpen = false;
-              this.showToast(`Order placed successfully! Total: ${this.formatPrice(result.total)}`);
-            } catch (error) {
-              console.error(error);
-              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
-              this.showToast(error.message || 'Unable to complete checkout.');
-            } finally {
-              this.submitting = false;
-            }
-          },
-          logout() {
-            localStorage.clear();
-            window.location.assign(appUrl('/'));
-          }
+          products: [], search: '', category: 'All', cart: [], cartOpen: false, checkoutName: '', checkoutEmail: '', submitting: false, loadingProducts: true, connectionError: '', toasts: [], toastId: 0, badgePulse: false,
+          get categories() { return [...new Set(this.products.map((product) => product.category || 'General').filter(Boolean))]; },
+          get filteredProducts() { const query = this.search.trim().toLowerCase(); return this.products.filter((product) => (this.category === 'All' || (product.category || 'General') === this.category) && (!query || `${product.title} ${product.description || ''}`.toLowerCase().includes(query))); },
+          get cartCount() { return this.cart.reduce((sum, item) => sum + item.qty, 0); },
+          get cartTotal() { return this.cart.reduce((sum, item) => sum + Number(item.price || 0) * item.qty, 0); },
+          async init() { if (localStorage.getItem('user_role') === 'admin') { window.location.assign(appUrl('/admin')); return; } this.checkoutName = localStorage.getItem('user_name') || ''; this.checkoutEmail = localStorage.getItem('user_email') || ''; await this.fetchProducts(); },
+          async fetchProducts() { this.loadingProducts = true; this.connectionError = ''; try { const response = await fetch(appUrl('/api/products')); if (!response.ok) throw new Error('Products request failed'); this.products = await response.json(); } catch (error) { console.error(error); this.setConnectionError(); } finally { this.loadingProducts = false; } },
+          addToCart(product) { const item = this.cart.find((entry) => entry.id === product.id); if (item) item.qty += 1; else this.cart.push({ ...product, qty: 1 }); this.badgePulse = false; requestAnimationFrame(() => { this.badgePulse = true; setTimeout(() => { this.badgePulse = false; }, 400); }); this.cartOpen = true; this.showToast(`${product.title} added to cart.`); },
+          updateQty(id, change) { const item = this.cart.find((entry) => entry.id === id); if (!item) return; item.qty += change; if (item.qty <= 0) this.cart = this.cart.filter((entry) => entry.id !== id); },
+          async checkout() { if (!this.cart.length) return; this.submitting = true; try { const response = await fetch(appUrl('/api/orders'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: this.checkoutName, email: this.checkoutEmail, items: this.cart.map((item) => ({ id: item.id, price: Number(item.price), qty: item.qty })) }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Checkout failed'); this.cart = []; this.cartOpen = false; this.showToast(`Order placed successfully. Total: ${this.formatCurrency(data.total)}`); } catch (error) { console.error(error); this.setConnectionError(); this.showToast(error.message || 'Unable to complete checkout.', 'error'); } finally { this.submitting = false; } },
+          showToast(message, type = 'success') { const id = ++this.toastId; this.toasts.push({ id, message, type }); setTimeout(() => this.removeToast(id), 3500); }, removeToast(id) { this.toasts = this.toasts.filter((toast) => toast.id !== id); },
+          setConnectionError() { this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.'; this.showToast(this.connectionError, 'error'); },
+          placeholderImage() { const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#E2E8F0"/><path d="M380 220h140v110H380z" fill="#94A3B8"/><circle cx="425" cy="260" r="12" fill="#F8FAFC"/><path d="m380 330 38-38 28 28 35-42 39 52H380z" fill="#F8FAFC"/></svg>'; return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`; }, fallbackImage(event) { event.target.src = this.placeholderImage(); event.target.onerror = null; },
+          formatCurrency(value) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0)); }, scrollToCatalog() { document.getElementById('catalog').scrollIntoView({ behavior: 'smooth' }); }, logout() { localStorage.clear(); window.location.assign(appUrl('/')); }
         };
       }
     </script>
