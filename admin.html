@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SwiftShop | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <style>
+      body { background: #F9FAFB; }
+      .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
+      .primary-btn { background: #4F46E5; color: #FFFFFF; }
+      .primary-btn:hover { background: #4338CA; }
+      .status-pill { background: #E0F2FE; color: #0F172A; border: 1px solid #BAE6FD; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner { width: 1rem; height: 1rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 9999px; animation: spin 650ms linear infinite; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-800" x-data="adminApp()" x-init="init()">
+    <div x-show="connectionError" x-transition class="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 shadow-sm" x-text="connectionError"></div>
+    <div class="fixed right-4 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
+      <template x-for="toast in toasts" :key="toast.id">
+        <div x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-3" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm" x-text="toast.message"></div>
+      </template>
+    </div>
+    <header class="border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div>
+          <div class="text-2xl font-bold text-slate-900">Merchant HQ</div>
+          <div class="text-sm text-slate-500">Operations dashboard</div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">A</span>
+            <div>
+              <div class="text-sm font-semibold text-slate-900" x-text="adminName"></div>
+              <div class="text-[11px] text-slate-500">Admin</div>
+            </div>
+          </div>
+          <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" @click="logout()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section class="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flat-card rounded-2xl p-5">
+          <div class="text-sm text-slate-500">Total Revenue</div>
+          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="formatPrice(totalRevenue)"></div>
+        </div>
+        <div class="flat-card rounded-2xl p-5">
+          <div class="text-sm text-slate-500">Total Orders</div>
+          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="orders.length"></div>
+        </div>
+        <div class="flat-card rounded-2xl p-5">
+          <div class="text-sm text-slate-500">Active Items</div>
+          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="products.length"></div>
+        </div>
+        <div class="flat-card rounded-2xl p-5">
+          <div class="text-sm text-slate-500">AOV</div>
+          <div class="mt-2 text-3xl font-bold text-slate-900" x-text="formatPrice(avgOrderValue)"></div>
+        </div>
+      </section>
+
+      <section class="mb-8 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div class="flat-card rounded-2xl overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <h2 class="text-lg font-semibold text-slate-900">Orders</h2>
+            <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700" @click="fetchOrders()">Refresh</button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="px-5 py-3 font-medium">Order</th>
+                  <th class="px-5 py-3 font-medium">Customer</th>
+                  <th class="px-5 py-3 font-medium">Total</th>
+                  <th class="px-5 py-3 font-medium">Status</th>
+                  <th class="px-5 py-3 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody x-show="!loadingOrders">
+                <template x-for="order in orders" :key="order.id">
+                  <tr class="border-t border-slate-200 transition-colors hover:bg-slate-50">
+                    <td class="px-5 py-3 font-medium text-slate-900" x-text="'#' + order.id"></td>
+                    <td class="px-5 py-3">
+                      <div class="font-medium text-slate-900" x-text="order.name || 'Unknown'"></div>
+                      <div class="text-xs text-slate-500" x-text="order.email || 'n/a'"></div>
+                    </td>
+                    <td class="px-5 py-3 font-medium text-slate-900" x-text="formatPrice(order.total_amount)"></td>
+                    <td class="px-5 py-3">
+                      <span class="status-pill inline-flex rounded-full px-2.5 py-1 text-xs font-medium" x-text="order.status"></span>
+                    </td>
+                    <td class="px-5 py-3 text-slate-500" x-text="formatDate(order.created_at)"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div x-show="loadingOrders" class="space-y-3 p-5">
+            <template x-for="item in [1, 2, 3]" :key="item"><div class="h-10 animate-pulse rounded bg-slate-100"></div></template>
+          </div>
+          <div x-show="!loadingOrders && !orders.length" class="border-t border-slate-200 px-5 py-10 text-center text-sm text-slate-500">No orders have been placed yet.</div>
+        </div>
+
+        <div class="flat-card rounded-2xl p-5">
+          <div class="mb-4 text-lg font-semibold text-slate-900">Add Product</div>
+          <form @submit.prevent="addProduct()" class="space-y-3">
+            <input x-model="newProduct.title" type="text" placeholder="Product title" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
+            <input x-model="newProduct.price" type="number" min="0" step="0.01" placeholder="Price" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
+            <input x-model="newProduct.category" type="text" placeholder="Category" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" required />
+            <input x-model="newProduct.image" type="url" placeholder="Image URL" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" />
+            <textarea x-model="newProduct.description" rows="3" placeholder="Description" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500"></textarea>
+            <button type="submit" class="primary-btn flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70" :disabled="submittingProduct">
+              <span x-show="submittingProduct" class="spinner"></span>
+              <span x-text="submittingProduct ? 'Publishing...' : 'Add product'"></span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="flat-card rounded-2xl overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 class="text-lg font-semibold text-slate-900">Inventory</h2>
+          <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700" @click="fetchProducts()">Refresh</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="px-5 py-3 font-medium">Product</th>
+                <th class="px-5 py-3 font-medium">Category</th>
+                <th class="px-5 py-3 font-medium">Price</th>
+                <th class="px-5 py-3 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody x-show="!loadingProducts">
+              <template x-for="product in products" :key="product.id">
+                  <tr class="border-t border-slate-200 transition-colors hover:bg-slate-50">
+                  <td class="px-5 py-3">
+                    <div class="flex items-center gap-3">
+                      <img :src="product.image || placeholderImage()" @error="fallbackImage($event)" :alt="product.title" class="h-12 w-12 rounded-lg bg-slate-100 object-cover" />
+                      <div>
+                        <div class="font-medium text-slate-900" x-text="product.title"></div>
+                        <div class="text-xs text-slate-500" x-text="product.description || 'No description'"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-700" x-text="product.category || 'General'"></td>
+                  <td class="px-5 py-3 font-medium text-slate-900" x-text="formatPrice(product.price)"></td>
+                  <td class="px-5 py-3">
+                    <button type="button" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600" @click="deleteProduct(product.id)">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div x-show="loadingProducts" class="space-y-3 p-5">
+          <template x-for="item in [1, 2, 3]" :key="item"><div class="h-14 animate-pulse rounded bg-slate-100"></div></template>
+        </div>
+        <div x-show="!loadingProducts && !products.length" class="border-t border-slate-200 px-5 py-10 text-center text-sm text-slate-500">No products are currently in inventory.</div>
+      </section>
+    </main>
+
+    <script>
+      function adminApp() {
+        return {
+          adminName: 'Admin User',
+          orders: [],
+          products: [],
+          loadingProducts: true,
+          loadingOrders: true,
+          submittingProduct: false,
+          connectionError: '',
+          toasts: [],
+          toastId: 0,
+          newProduct: {
+            title: '',
+            price: '',
+            category: '',
+            image: '',
+            description: ''
+          },
+          get totalRevenue() {
+            return this.orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+          },
+          get avgOrderValue() {
+            if (!this.orders.length) return 0;
+            return this.totalRevenue / this.orders.length;
+          },
+          init() {
+            const role = localStorage.getItem('user_role');
+            if (role !== 'admin') {
+              window.location.href = '/';
+              return;
+            }
+            this.adminName = localStorage.getItem('user_name') || 'Admin User';
+            this.fetchProducts();
+            this.fetchOrders();
+          },
+          async fetchProducts() {
+            this.loadingProducts = true;
+            try {
+              const response = await fetch('/api/products');
+              if (!response.ok) throw new Error('Failed to load products');
+              this.products = await response.json();
+            } catch (error) {
+              console.error(error);
+              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
+              this.showToast('Inventory could not be loaded.');
+            } finally {
+              this.loadingProducts = false;
+            }
+          },
+          async fetchOrders() {
+            this.loadingOrders = true;
+            try {
+              const response = await fetch('/api/orders');
+              if (!response.ok) throw new Error('Failed to load orders');
+              const rows = await response.json();
+              this.orders = rows.map((order) => ({
+                ...order,
+                name: order.name || order.customer_name || 'Unknown',
+                email: order.email || order.customer_email || 'unknown@example.com'
+              }));
+            } catch (error) {
+              console.error(error);
+              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
+              this.showToast('Orders could not be loaded.');
+            } finally {
+              this.loadingOrders = false;
+            }
+          },
+          async addProduct() {
+            this.submittingProduct = true;
+            try {
+              const payload = {
+                title: this.newProduct.title,
+                price: Number(this.newProduct.price),
+                category: this.newProduct.category,
+                image: this.newProduct.image,
+                description: this.newProduct.description
+              };
+
+              const response = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error || 'Unable to add product');
+
+              this.products.unshift(data);
+              this.newProduct = { title: '', price: '', category: '', image: '', description: '' };
+              this.showToast('New product published.');
+            } catch (error) {
+              console.error(error);
+              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
+              this.showToast(error.message || 'Unable to add product.');
+            } finally {
+              this.submittingProduct = false;
+            }
+          },
+          async deleteProduct(productId) {
+            try {
+              const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+              if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Unable to delete product');
+              }
+              this.products = this.products.filter((product) => product.id !== productId);
+              this.showToast('Product deleted.');
+            } catch (error) {
+              console.error(error);
+              this.connectionError = 'Unable to connect to SwiftShop API. Please ensure server.js is running.';
+              this.showToast(error.message || 'Unable to delete product.');
+            }
+          },
+          showToast(message) {
+            const id = ++this.toastId;
+            this.toasts.push({ id, message });
+            setTimeout(() => { this.toasts = this.toasts.filter((toast) => toast.id !== id); }, 3000);
+          },
+          placeholderImage() {
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#E5E7EB"/><path d="M380 220h140v110H380z" fill="#9CA3AF"/><circle cx="425" cy="260" r="12" fill="#F9FAFB"/><path d="m380 330 38-38 28 28 35-42 39 52H380z" fill="#F9FAFB"/></svg>';
+            return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+          },
+          fallbackImage(event) {
+            event.target.src = this.placeholderImage();
+            event.target.onerror = null;
+          },
+          formatPrice(value) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
+          },
+          formatDate(value) {
+            if (!value) return 'N/A';
+            return new Date(value).toLocaleString();
+          },
+          logout() {
+            localStorage.clear();
+            window.location.href = '/';
+          }
+        };
+      }
+    </script>
+  </body>
+</html>

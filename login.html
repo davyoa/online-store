@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SwiftShop | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <style>
+      body { background: #F9FAFB; }
+      .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
+      .primary-btn { background: #4F46E5; color: #FFFFFF; }
+      .primary-btn:hover { background: #4338CA; }
+      .secondary-btn { background: #F3F4F6; color: #111827; border: 1px solid #E5E7EB; }
+      .secondary-btn.active { background: #EEF2FF; border-color: #C7D2FE; color: #1F2937; }
+      @keyframes slide-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+      .slide-in { animation: slide-in 180ms ease-out; }
+    </style>
+  </head>
+  <body class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md flat-card rounded-xl shadow-sm p-7" x-data="{
+      role: 'client',
+      email: 'client@swiftshop.com',
+      password: 'password123',
+      loading: false,
+      toast: '',
+      toastTimer: null,
+      selectRole(role) { this.role = role; this.email = role === 'admin' ? 'admin@swiftshop.com' : 'client@swiftshop.com'; this.password = role === 'admin' ? 'admin123' : 'password123'; },
+      showToast(message) { this.toast = message; clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => { this.toast = ''; }, 3000); },
+      submit() {
+        if (!this.email || !this.email.includes('@')) {
+          this.showToast('Please enter a valid email address.');
+          return;
+        }
+        if (!this.password || this.password.length < 4) {
+          this.showToast('Please enter a valid password.');
+          return;
+        }
+
+        this.loading = true;
+        localStorage.setItem('user_role', this.role);
+        localStorage.setItem('user_email', this.email);
+        localStorage.setItem('user_name', this.role === 'admin' ? 'Admin User' : 'Client User');
+
+        setTimeout(() => {
+          window.location.href = this.role === 'admin' ? '/admin' : '/store';
+        }, 300);
+      }
+    }">
+      <div x-show="toast" x-transition class="slide-in fixed right-4 top-4 z-50 max-w-sm rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-sm" x-text="toast"></div>
+
+      <div class="mb-6 text-center">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white text-xl font-bold">S</div>
+        <h1 class="text-2xl font-bold text-slate-900">SwiftShop</h1>
+        <p class="mt-1 text-sm text-slate-500">Sign in to continue</p>
+      </div>
+
+      <div class="mb-5 grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+        <button type="button" class="secondary-btn rounded-md py-2 text-sm font-medium transition" :class="role === 'client' ? 'active' : ''" @click="selectRole('client')">
+          Client
+        </button>
+        <button type="button" class="secondary-btn rounded-md py-2 text-sm font-medium transition" :class="role === 'admin' ? 'active' : ''" @click="selectRole('admin')">
+          Admin
+        </button>
+      </div>
+
+      <form @submit.prevent="submit" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <input x-model="email" type="email" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500" placeholder="you@example.com" required />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+          <input x-model="password" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500" placeholder="Password" required />
+        </div>
+
+        <button type="submit" class="primary-btn w-full rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-75" :disabled="loading">
+          <span x-show="!loading">Continue as <span x-text="role === 'admin' ? 'Admin' : 'Client'"></span></span>
+          <span x-show="loading">Signing in...</span>
+        </button>
+      </form>
+
+      <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        Demo accounts:
+        <div class="mt-1 flex justify-between">
+          <span>Client: client@swiftshop.com</span>
+          <span>password123</span>
+        </div>
+        <div class="mt-1 flex justify-between">
+          <span>Admin: admin@swiftshop.com</span>
+          <span>admin123</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
