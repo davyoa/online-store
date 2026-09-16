@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,6 +28,39 @@ const pool = mysql.createPool({
   queueLimit: 0,
   charset: 'utf8mb4'
 });
+
+async function initializeDatabase() {
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schemaSql = await fs.readFile(schemaPath, 'utf8');
+  const bootstrapConnection = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    multipleStatements: false,
+    charset: 'utf8mb4'
+  });
+
+  try {
+    const statements = schemaSql
+      .split(/;\s*(?:\r?\n|$)/)
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+
+    for (const statement of statements) {
+      try {
+        await bootstrapConnection.query(statement);
+      } catch (error) {
+        if (error.code !== 'ER_DUP_KEYNAME') {
+          throw error;
+        }
+      }
+    }
+
+    console.log('SwiftShop database initialized and seeded.');
+  } finally {
+    await bootstrapConnection.end();
+  }
+}
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
@@ -183,8 +217,19 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`SwiftShop server running on http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, () => {
+      console.log(`SwiftShop server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('SwiftShop startup failed. Check MySQL credentials and availability.', error);
+    await pool.end();
+    process.exitCode = 1;
+  }
+}
+
+startServer();
 
 export default app;

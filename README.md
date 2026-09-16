@@ -9,16 +9,12 @@ A production-ready REST API for an e-commerce platform built with Node.js, Expre
 - MySQL 8.0+
 
 ### 2. Database Setup
-```bash
-# Connect to MySQL and run the schema
-mysql -u root -p < schema.sql
-```
-This creates the `swiftshop` database with all tables and seed data (1 admin user, 2 products).
+The server automatically creates the `swiftshop` database, tables, indexes, and seed data when it starts. No manual schema command is required.
 
 ### 3. Configure Environment
 Edit `.env` with your MySQL credentials:
 ```env
-PORT=3000
+PORT=5000
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_mysql_password
@@ -39,7 +35,7 @@ npm start
 npm run dev
 ```
 
-Server runs at `http://localhost:3000`
+Server runs at `http://localhost:5000`
 
 ---
 
