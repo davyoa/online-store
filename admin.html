@@ -6,6 +6,9 @@
     <title>SwiftShop | Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <script>
+      const appUrl = (path) => new URL(path, window.location.origin).toString();
+    </script>
     <style>
       body { background: #F9FAFB; }
       .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
@@ -195,7 +198,7 @@
           init() {
             const role = localStorage.getItem('user_role');
             if (role !== 'admin') {
-              window.location.href = '/';
+              window.location.assign(appUrl('/'));
               return;
             }
             this.adminName = localStorage.getItem('user_name') || 'Admin User';
@@ -205,7 +208,7 @@
           async fetchProducts() {
             this.loadingProducts = true;
             try {
-              const response = await fetch('/api/products');
+              const response = await fetch(appUrl('/api/products'));
               if (!response.ok) throw new Error('Failed to load products');
               this.products = await response.json();
             } catch (error) {
@@ -219,7 +222,7 @@
           async fetchOrders() {
             this.loadingOrders = true;
             try {
-              const response = await fetch('/api/orders');
+              const response = await fetch(appUrl('/api/orders'));
               if (!response.ok) throw new Error('Failed to load orders');
               const rows = await response.json();
               this.orders = rows.map((order) => ({
@@ -246,7 +249,7 @@
                 description: this.newProduct.description
               };
 
-              const response = await fetch('/api/products', {
+              const response = await fetch(appUrl('/api/products'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -268,7 +271,7 @@
           },
           async deleteProduct(productId) {
             try {
-              const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+              const response = await fetch(appUrl(`/api/products/${productId}`), { method: 'DELETE' });
               if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || 'Unable to delete product');
@@ -303,7 +306,7 @@
           },
           logout() {
             localStorage.clear();
-            window.location.href = '/';
+            window.location.assign(appUrl('/'));
           }
         };
       }

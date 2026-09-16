@@ -6,6 +6,9 @@
     <title>SwiftShop | Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <script>
+      const appUrl = (path) => new URL(path, window.location.origin).toString();
+    </script>
     <style>
       body { background: #F9FAFB; }
       .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
@@ -183,7 +186,7 @@
           async init() {
             const role = localStorage.getItem('user_role');
             if (role === 'admin') {
-              window.location.href = '/admin';
+              window.location.assign(appUrl('/admin'));
               return;
             }
             await this.fetchProducts();
@@ -194,7 +197,7 @@
             this.loadingProducts = true;
             this.connectionError = '';
             try {
-              const response = await fetch('/api/products');
+              const response = await fetch(appUrl('/api/products'));
               if (!response.ok) throw new Error('Failed to load products');
               this.products = await response.json();
             } catch (error) {
@@ -256,7 +259,7 @@
                 items: this.cart.map((item) => ({ id: item.id, price: Number(item.price), qty: item.qty }))
               };
 
-              const response = await fetch('/api/orders', {
+              const response = await fetch(appUrl('/api/orders'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -278,7 +281,7 @@
           },
           logout() {
             localStorage.clear();
-            window.location.href = '/';
+            window.location.assign(appUrl('/'));
           }
         };
       }

@@ -221,7 +221,7 @@ async function startServer() {
   try {
     await initializeDatabase();
     app.listen(PORT, () => {
-      console.log(`SwiftShop server running on http://localhost:${PORT}`);
+      console.log(`SwiftShop server listening on port ${PORT}`);
     });
   } catch (error) {
     console.error('SwiftShop startup failed. Check MySQL credentials and availability.', error);
