@@ -14,60 +14,108 @@
       .flat-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
       .primary-btn { background: #4F46E5; color: #FFFFFF; }
       .primary-btn:hover { background: #4338CA; }
-      .secondary-btn { background: #F3F4F6; color: #111827; border: 1px solid #E5E7EB; }
-      .secondary-btn.active { background: #EEF2FF; border-color: #C7D2FE; color: #1F2937; }
       @keyframes slide-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
       .slide-in { animation: slide-in 180ms ease-out; }
     </style>
   </head>
   <body class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-md flat-card rounded-xl shadow-sm p-7" x-data="{
-      role: 'client',
-      email: 'client@swiftshop.com',
-      password: 'password123',
+      mode: 'client',
+      formMode: 'login',
+      name: '',
+      email: '',
+      password: '',
       loading: false,
       toast: '',
       toastTimer: null,
-      selectRole(role) { this.role = role; this.email = role === 'admin' ? 'admin@swiftshop.com' : 'client@swiftshop.com'; this.password = role === 'admin' ? 'admin123' : 'password123'; },
-      showToast(message) { this.toast = message; clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => { this.toast = ''; }, 3000); },
-      submit() {
+      init() {
+        const savedRole = localStorage.getItem('user_role');
+        if (savedRole === 'admin') {
+          window.location.assign(appUrl('/admin'));
+          return;
+        }
+        if (savedRole === 'client') {
+          window.location.assign(appUrl('/store'));
+        }
+      },
+      useAdminLogin() {
+        this.mode = 'admin';
+        this.formMode = 'login';
+        this.name = '';
+        this.email = '';
+        this.password = '';
+      },
+      toggleSignup() {
+        this.formMode = this.formMode === 'login' ? 'signup' : 'login';
+        this.name = '';
+        this.email = '';
+        this.password = '';
+      },
+      showToast(message) {
+        this.toast = message;
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => { this.toast = ''; }, 3200);
+      },
+      async submit() {
         if (!this.email || !this.email.includes('@')) {
           this.showToast('Please enter a valid email address.');
           return;
         }
-        if (!this.password || this.password.length < 4) {
-          this.showToast('Please enter a valid password.');
+
+        if (!this.password || this.password.length < 6) {
+          this.showToast(this.formMode === 'signup' ? 'Password must be at least 6 characters long.' : 'Please enter a valid password.');
+          return;
+        }
+
+        if (this.formMode === 'signup' && !this.name.trim()) {
+          this.showToast('Please enter your full name.');
           return;
         }
 
         this.loading = true;
-        localStorage.setItem('user_role', this.role);
-        localStorage.setItem('user_email', this.email);
-        localStorage.setItem('user_name', this.role === 'admin' ? 'Admin User' : 'Client User');
 
-        setTimeout(() => {
-          window.location.assign(appUrl(this.role === 'admin' ? '/admin' : '/store'));
-        }, 300);
+        try {
+          const endpoint = this.formMode === 'signup' ? '/api/register' : '/api/login';
+          const payload = this.formMode === 'signup'
+            ? { name: this.name.trim(), email: this.email.trim(), password: this.password.trim() }
+            : { email: this.email.trim(), password: this.password.trim() };
+
+          const response = await fetch(appUrl(endpoint), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Authentication failed');
+
+          const user = data.user;
+          localStorage.setItem('user_role', user.role || this.mode || 'client');
+          localStorage.setItem('user_email', user.email || this.email.trim());
+          localStorage.setItem('user_name', user.name || this.name.trim() || 'Customer');
+
+          window.location.assign(appUrl(user.role === 'admin' ? '/admin' : '/store'));
+        } catch (error) {
+          this.showToast(error.message || 'Authentication failed.');
+        } finally {
+          this.loading = false;
+        }
       }
-    }">
+    }" x-init="init()">
       <div x-show="toast" x-transition class="slide-in fixed right-4 top-4 z-50 max-w-sm rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-sm" x-text="toast"></div>
 
       <div class="mb-6 text-center">
         <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white text-xl font-bold">S</div>
         <h1 class="text-2xl font-bold text-slate-900">SwiftShop</h1>
-        <p class="mt-1 text-sm text-slate-500">Sign in to continue</p>
-      </div>
-
-      <div class="mb-5 grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
-        <button type="button" class="secondary-btn rounded-md py-2 text-sm font-medium transition" :class="role === 'client' ? 'active' : ''" @click="selectRole('client')">
-          Client
-        </button>
-        <button type="button" class="secondary-btn rounded-md py-2 text-sm font-medium transition" :class="role === 'admin' ? 'active' : ''" @click="selectRole('admin')">
-          Admin
-        </button>
+        <p class="mt-1 text-sm text-slate-500" x-text="formMode === 'signup' ? 'Create your account' : (mode === 'admin' ? 'Admin portal access' : 'Sign in to continue')"></p>
       </div>
 
       <form @submit.prevent="submit" class="space-y-4">
+        <div x-show="formMode === 'signup'">
+          <label class="mb-1 block text-sm font-medium text-slate-700">Full name</label>
+          <input x-model="name" type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500" placeholder="Jane Doe" />
+        </div>
+
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
           <input x-model="email" type="email" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500" placeholder="you@example.com" required />
@@ -79,21 +127,17 @@
         </div>
 
         <button type="submit" class="primary-btn w-full rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-75" :disabled="loading">
-          <span x-show="!loading">Continue as <span x-text="role === 'admin' ? 'Admin' : 'Client'"></span></span>
-          <span x-show="loading">Signing in...</span>
+          <span x-show="!loading" x-text="formMode === 'signup' ? 'Create account' : (mode === 'admin' ? 'Access admin portal' : 'Sign in')"></span>
+          <span x-show="loading" x-text="formMode === 'signup' ? 'Creating account...' : 'Signing in...'"></span>
         </button>
       </form>
 
-      <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-        Demo accounts:
-        <div class="mt-1 flex justify-between">
-          <span>Client: client@swiftshop.com</span>
-          <span>password123</span>
-        </div>
-        <div class="mt-1 flex justify-between">
-          <span>Admin: admin@swiftshop.com</span>
-          <span>admin123</span>
-        </div>
+      <div class="mt-5 text-center text-sm text-slate-600">
+        <button type="button" class="font-medium text-indigo-600 hover:text-indigo-700" @click="toggleSignup()" x-text="formMode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'"></button>
+      </div>
+
+      <div class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
+        <button type="button" class="font-semibold text-indigo-600 hover:text-indigo-700" @click="useAdminLogin()">Portal Access → Admin Login</button>
       </div>
     </div>
   </body>

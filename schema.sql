@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NULL,
     role ENUM('client', 'admin') NOT NULL DEFAULT 'client',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -38,8 +39,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-INSERT IGNORE INTO users (id, name, email, role) VALUES
-(1, 'Admin User', 'admin@swiftshop.com', 'admin');
+INSERT IGNORE INTO users (id, name, email, password, role) VALUES
+(1, 'Admin User', 'admin@swiftshop.com', NULL, 'admin');
 
 INSERT IGNORE INTO products (id, title, price, category, image, description) VALUES
 (1, 'Wireless Headphones', 99.99, 'Electronics', 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=900&q=80', 'Premium wireless headphones with noise cancellation and 30-hour battery life.'),

@@ -4,6 +4,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -11,18 +12,22 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+const isProduction = (process.env.APP_ENV || process.env.NODE_ENV || 'development').toLowerCase() === 'production';
 const PORT = Number(process.env.APP_PORT || process.env.PORT || 5000);
+
 const databaseConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'swiftshop',
+  host: isProduction ? process.env.PROD_DB_HOST || process.env.DB_HOST || 'localhost' : process.env.DEV_DB_HOST || process.env.DB_HOST || 'localhost',
+  port: Number(isProduction ? process.env.PROD_DB_PORT || process.env.DB_PORT || 3306 : process.env.DEV_DB_PORT || process.env.DB_PORT || 3306),
+  user: isProduction ? process.env.PROD_DB_USER || process.env.DB_USER || 'root' : process.env.DEV_DB_USER || process.env.DB_USER || 'root',
+  password: isProduction ? process.env.PROD_DB_PASSWORD || process.env.DB_PASSWORD || '' : process.env.DEV_DB_PASSWORD || process.env.DB_PASSWORD || '',
+  database: isProduction ? process.env.PROD_DB_NAME || process.env.DB_NAME || 'swiftshop' : process.env.DEV_DB_NAME || process.env.DB_NAME || 'swiftshop',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   charset: 'utf8mb4',
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+  ssl: String(isProduction ? process.env.PROD_DB_SSL ?? process.env.DB_SSL ?? 'false' : process.env.DEV_DB_SSL ?? process.env.DB_SSL ?? 'false').toLowerCase() === 'true'
+    ? { rejectUnauthorized: false }
+    : undefined
 };
 
 app.use(cors());
@@ -31,6 +36,32 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname, { index: false }));
 
 const pool = mysql.createPool(databaseConfig);
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(String(password), salt, 100000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedPassword) {
+  if (!storedPassword) return false;
+  if (typeof storedPassword === 'string' && !storedPassword.includes(':')) {
+    return storedPassword === String(password);
+  }
+
+  const [salt, hash] = String(storedPassword).split(':');
+  if (!salt || !hash) {
+    return storedPassword === String(password);
+  }
+
+  try {
+    const derived = crypto.pbkdf2Sync(String(password), salt, 100000, 64, 'sha512').toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(derived, 'hex'));
+  } catch (error) {
+    return false;
+  }
+}
 
 async function initializeDatabase() {
   const schemaPath = path.join(__dirname, 'schema.sql');
@@ -48,9 +79,31 @@ async function initializeDatabase() {
       try {
         await bootstrapConnection.query(statement);
       } catch (error) {
-        if (error.code !== 'ER_DUP_KEYNAME') {
+        if (error.code !== 'ER_DUP_KEYNAME' && error.code !== 'ER_DUP_ENTRY') {
           throw error;
         }
+      }
+    }
+
+    const [passwordColumn] = await bootstrapConnection.query("SHOW COLUMNS FROM users LIKE 'password'");
+    if (passwordColumn.length === 0) {
+      await bootstrapConnection.query("ALTER TABLE users ADD COLUMN password VARCHAR(255) NULL AFTER email");
+    }
+
+    const demoUsers = [
+      { name: 'Admin User', email: 'admin@swiftshop.com', password: 'admin123', role: 'admin' },
+      { name: 'Client User', email: 'client@swiftshop.com', password: 'password123', role: 'client' }
+    ];
+
+    for (const user of demoUsers) {
+      const [existing] = await bootstrapConnection.query('SELECT id, password FROM users WHERE email = ? LIMIT 1', [normalizeEmail(user.email)]);
+      if (existing.length === 0) {
+        await bootstrapConnection.query(
+          'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+          [user.name, normalizeEmail(user.email), hashPassword(user.password), user.role]
+        );
+      } else if (!existing[0].password) {
+        await bootstrapConnection.query('UPDATE users SET password = ?, role = ? WHERE id = ?', [hashPassword(user.password), user.role, existing[0].id]);
       }
     }
 
@@ -70,6 +123,87 @@ app.get('/store', (req, res) => {
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const trimmedName = String(name || '').trim();
+    const trimmedEmail = normalizeEmail(email);
+    const trimmedPassword = String(password || '').trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    if (trimmedPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    if (!trimmedEmail.includes('@')) {
+      return res.status(400).json({ error: 'Please use a valid email address' });
+    }
+
+    const [existingUsers] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [trimmedEmail]);
+    if (existingUsers.length > 0) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [trimmedName, trimmedEmail, hashPassword(trimmedPassword), 'client']
+    );
+
+    const [rows] = await pool.query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [result.insertId]);
+    res.status(201).json({ user: rows[0] });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const password = String(req.body.password || '');
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const user = rows[0];
+    if (!verifyPassword(password, user.password)) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        created_at: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, name, email, role, created_at FROM users ORDER BY id ASC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
 
 app.get('/api/products', async (req, res) => {
@@ -170,16 +304,17 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const total = normalizedItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const normalizedEmail = normalizeEmail(email);
 
-    let [existingUsers] = await connection.query('SELECT id FROM users WHERE email = ?', [String(email).trim()]);
+    let [existingUsers] = await connection.query('SELECT id FROM users WHERE email = ? LIMIT 1', [normalizedEmail]);
 
     let userId;
     if (existingUsers.length > 0) {
       userId = existingUsers[0].id;
     } else {
       const [userResult] = await connection.query(
-        'INSERT INTO users (name, email, role) VALUES (?, ?, ?)',
-        [String(name).trim(), String(email).trim(), 'client']
+        'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+        [String(name).trim(), normalizedEmail, hashPassword('guest-password'), 'client']
       );
       userId = userResult.insertId;
     }
@@ -192,11 +327,7 @@ app.post('/api/orders', async (req, res) => {
     const orderId = orderResult.insertId;
     const itemRows = normalizedItems.map((item) => [orderId, item.id, item.qty, Number(item.price).toFixed(2)]);
 
-    await connection.query(
-      'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ?',
-      [itemRows]
-    );
-
+    await connection.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ?', [itemRows]);
     await connection.commit();
 
     res.status(201).json({
